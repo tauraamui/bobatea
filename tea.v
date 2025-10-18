@@ -10,15 +10,20 @@ mut:
 }
 
 pub interface Model {
-    init() !
+mut:
+    init() !Cmd
+    update(Msg) (Model, Cmd)
 }
+
+pub interface Msg {}
+
+pub type Cmd = fn () Msg
 
 pub fn (mut a App) run() ! {
-    a.initial_model.init()!
-    return
+    cmd := a.initial_model.init()!
 }
 
-pub fn new_program(m Model) App {
+pub fn new_program(mut m Model) App {
     return App{
         t_ref: tui.init(tui.Config{})
         initial_model: m
