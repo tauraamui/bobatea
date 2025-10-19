@@ -24,7 +24,6 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
     return i_m, none
 }
 
-// NOTE(tauraamui): use passed context to try and render in middle of window
 fn (mut m MainModel) view(mut ctx draw.Contextable) {
     win_width := ctx.window_width()
     win_height := ctx.window_height()
