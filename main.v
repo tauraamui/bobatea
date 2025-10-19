@@ -21,6 +21,11 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
     // returned model instance in order to not encounter catastrophic C level
     // compiler panic
     i_m := m
+    if msg is tea.KeyMsg {
+        if msg.code == .escape {
+            return i_m, tea.quit
+        }
+    }
     return i_m, none
 }
 
