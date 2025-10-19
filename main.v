@@ -1,8 +1,7 @@
 module main
 
-import lib.draw
-
 import bobatea as tea
+import lib.draw
 
 enum SessionState as u8 {
     timer
@@ -29,7 +28,9 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 fn (mut m MainModel) view(mut ctx draw.Contextable) {
     win_width := ctx.window_width()
     win_height := ctx.window_height()
-    ctx.draw_text((win_width / 2) - 1, win_height / 2, "X")
+
+    msg := "welcome to boba tea!"
+    ctx.draw_text((win_width / 2) - (msg.len / 2), win_height / 2, msg)
 }
 
 fn new_model() MainModel {
