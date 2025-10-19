@@ -61,25 +61,19 @@ fn (mut app App) quit() ! {
 }
 
 fn event(e draw.Event, mut app App) {
-	match e.typ {
-		.key_down {
-		    m, cmd := app.initial_model.update(KeyMsg{ code: e.code })
-		    app.initial_model = m
-		    u_cmd := cmd or { noop_cmd }
-		    msg := u_cmd()
-		    if msg is QuitMsg {
-		        app.quit() or { panic(err) }
-		    }
-		}
-		.mouse_scroll {
-		    // send msg to model
-
-		}
-		.resized {
-		    // send msg to model
-		}
-		else {}
-	}
+    msg := match e.typ {
+		.key_down { Msg(KeyMsg{ code: e.code }) }
+		.mouse_scroll { Msg(NoopMsg{}) }
+		.resized { Msg(NoopMsg{}) }
+		else { Msg(NoopMsg{}) }
+    }
+    m, cmd := app.initial_model.update(msg)
+    app.initial_model = m
+    u_cmd := cmd or { noop_cmd }
+    models_msg := u_cmd()
+    if models_msg is QuitMsg {
+        app.quit() or { panic(err) }
+    }
 }
 
 fn frame(mut app App) {
