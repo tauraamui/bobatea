@@ -1,5 +1,7 @@
 module main
 
+import lib.draw
+
 import bobatea as tea
 
 enum SessionState as u8 {
@@ -11,18 +13,23 @@ struct MainModel {
     state SessionState
 }
 
-fn (mut m MainModel) init() !tea.Cmd {
-    return fn () tea.Msg { return tea.Msg(EmptyMsg{}) }
+fn (mut m MainModel) init() ?tea.Cmd {
+    return none // no init required for now
 }
 
-struct EmptyMsg {}
-
-fn (mut m MainModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
     // NOTE(tauraamui): have to create manual non-mutable copy of the final
     // returned model instance in order to not encounter catastrophic C level
     // compiler panic
     i_m := m
-    return i_m, fn () tea.Msg { return EmptyMsg{} }
+    return i_m, none
+}
+
+// NOTE(tauraamui): use passed context to try and render in middle of window
+fn (mut m MainModel) view(mut ctx draw.Contextable) {
+    win_width := ctx.window_width()
+    win_height := ctx.window_height()
+    ctx.draw_text((win_width / 2) - 1, win_height / 2, "X")
 }
 
 fn new_model() MainModel {
