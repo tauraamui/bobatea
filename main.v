@@ -18,7 +18,11 @@ fn (mut m MainModel) init() !tea.Cmd {
 struct EmptyMsg {}
 
 fn (mut m MainModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
-    return m, fn () tea.Msg { return tea.Msg(EmptyMsg{}) }
+    // NOTE(tauraamui): have to create manual non-mutable copy of the final
+    // returned model instance in order to not encounter catastrophic C level
+    // compiler panic
+    i_m := m
+    return i_m, fn () tea.Msg { return EmptyMsg{} }
 }
 
 fn new_model() MainModel {
