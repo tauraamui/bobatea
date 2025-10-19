@@ -6,6 +6,7 @@ import lib.draw
 pub struct App {
     render_debug bool
 mut:
+	ui            &draw.Contextable = unsafe { nil }
     t_ref         &tui.Context
     initial_model Model
 }
@@ -19,6 +20,8 @@ mut:
 
 pub interface Msg {}
 
+pub struct KeyMsg {}
+
 pub type Cmd = fn () Msg
 
 struct NoopMsg {}
@@ -27,9 +30,51 @@ fn noop_cmd() Msg {
     return NoopMsg{}
 }
 
-pub fn (mut a App) run() ! {
-    cmd := a.initial_model.init() or { noop_cmd }
+pub fn (mut app App) run() ! {
+    cmd := app.initial_model.init() or { noop_cmd }
     cmd() // TODO(tauraamui): something with the initial msg?
+
+	ctx, run := draw.new_context(
+		render_debug:         false
+		user_data:            app
+		event_fn:             event
+		frame_fn:             frame
+		capture_events:       true
+		use_alternate_buffer: true
+	)
+	app.ui = ctx
+
+    run()!
+}
+
+fn (mut app App) quit() ! {
+    exit(0)
+}
+
+fn event(e draw.Event, mut app App) {
+	match e.typ {
+		.key_down {
+			app.quit() or { panic(err) } // shouldn't happen anyways
+		    // send msg to model
+		}
+		.mouse_scroll {
+		    // send msg to model
+
+		}
+		.resized {
+		    // send msg to model
+		}
+		else {}
+	}
+}
+
+fn frame(mut app App) {
+	app.ui.clear()
+	app.ui.hide_cursor() // make it default, should think harder about this
+	                     // when it comes time to implement dynamic input fields etc.,
+	app.initial_model.view(mut app.ui)
+	app.ui.reset()
+	app.ui.flush()
 }
 
 pub fn new_program(mut m Model) App {
