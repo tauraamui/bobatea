@@ -9,6 +9,7 @@ mut:
 	ui            &draw.Contextable = unsafe { nil }
     t_ref         &tui.Context
     initial_model Model
+    event_invoked bool
 }
 
 pub interface Model {
@@ -61,12 +62,17 @@ fn (mut app App) quit() ! {
 }
 
 fn event(e draw.Event, mut app App) {
+	defer { app.event_invoked = true }
     msg := match e.typ {
 		.key_down { Msg(KeyMsg{ code: e.code }) }
 		.mouse_scroll { Msg(NoopMsg{}) }
 		.resized { Msg(NoopMsg{}) }
 		else { Msg(NoopMsg{}) }
     }
+    app.handle_event(msg)
+}
+
+fn (mut app App) handle_event(msg Msg) {
     m, cmd := app.initial_model.update(msg)
     app.initial_model = m
     u_cmd := cmd or { noop_cmd }
@@ -77,6 +83,10 @@ fn event(e draw.Event, mut app App) {
 }
 
 fn frame(mut app App) {
+	defer { app.event_invoked = false }
+	if app.event_invoked == false {
+		app.handle_event(NoopMsg{})
+	}
 	app.ui.clear()
 	app.ui.hide_cursor() // make it default, should think harder about this
 	                     // when it comes time to implement dynamic input fields etc.,
