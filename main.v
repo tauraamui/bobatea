@@ -9,6 +9,8 @@ enum SessionState as u8 {
     spinner
 }
 
+const state_colors = [draw.Color.ansi(69), draw.Color.ansi(82)]
+
 struct MainModel {
 mut:
     state SessionState
@@ -40,11 +42,8 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 }
 
 fn (m MainModel) view(mut ctx draw.Contextable) {
-    win_width := ctx.window_width()
-    win_height := ctx.window_height()
-
-	state := if m.state == .timer { "timer" } else { "spinner" }
-    draw_box(mut ctx, 2, 2, 15, 5, draw.Color.ansi(69))
+    draw_box(mut ctx, 2, 2, 15, 5, state_colors[m.state])
+    // draw_box(mut ctx, 2, 2, 15, 5, draw.Color.ansi(69))
     draw_box(mut ctx, 4, 4, 15, 5, draw.Color.ansi(241))
 }
 
