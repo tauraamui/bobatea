@@ -10,6 +10,7 @@ mut:
 	t_ref         &tui.Context
 	initial_model Model
 	event_invoked bool
+	next_msg      ?Msg
 }
 
 pub interface Model {
@@ -91,6 +92,7 @@ fn (mut app App) handle_event(msg Msg) {
 	if models_msg is QuitMsg {
 		app.quit() or { panic(err) }
 	}
+	app.next_msg = models_msg
 }
 
 fn frame(mut app App) {
@@ -98,7 +100,9 @@ fn frame(mut app App) {
 	// NOTE(tauraamui) [21/10/2025]: basically, if the stdlib event loop hasn't invoked update
 	//                               due to a lack of an actual event, call it from frame anyway
 	if app.event_invoked == false {
-		app.handle_event(NoopMsg{})
+	    msg := app.next_msg or { Msg(NoopMsg{}) }
+	    defer { app.next_msg = none }
+		app.handle_event(msg)
 	}
 	app.ui.clear()
 	app.ui.hide_cursor() // make it default, should think harder about this
