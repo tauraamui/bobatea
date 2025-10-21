@@ -10,8 +10,8 @@ pub:
 }
 
 pub fn Color.ansi(c int) Color {
-    r, g, b := ansi2rgb(c)
-    return Color{ r, g, b }
+	r, g, b := ansi2rgb(c)
+	return Color{r, g, b}
 }
 
 // converts an ANSI 256-color index back to RGB components
@@ -27,5 +27,3 @@ fn ansi2rgb(ansi_color int) (u8, u8, u8) {
 
 	return r, g, b
 }
-
-

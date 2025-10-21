@@ -137,11 +137,12 @@ fn (style Style) close() string {
 }
 
 struct Cell {
-	data         ?rune
-	visual_width int // account for runes which are unicode chars (multiple width chars)
-	fg_color     ?Color
-	bg_color     ?Color
-	style        ?Style
+	data            ?rune
+	visual_width    int  // account for runes which are unicode chars (multiple width chars)
+	is_continuation bool // true if this cell is part of a multi-width character
+	fg_color        ?Color
+	bg_color        ?Color
+	style           ?Style
 }
 
 fn (cell Cell) str() string {
@@ -239,15 +240,40 @@ fn (mut ctx Context) window_height() int {
 	return ctx.ref.window_height
 }
 
+fn rune_visual_width(r rune) int {
+	return utf8_str_visible_length(r.str())
+}
+
 fn (mut ctx Context) write(c string) {
 	cursor_pos := ctx.cursor_pos
-	for i, c_char in c.runes() {
-		ctx.data.set(cursor_pos.x + i, cursor_pos.y, Cell{
-			data:     c_char
-			fg_color: ctx.fg_color
-			bg_color: ctx.bg_color
-			style:    ctx.style
+	mut x_offset := 0
+
+	for c_char in c.runes() {
+		width := rune_visual_width(c_char)
+
+		// Set the main cell with the character
+		ctx.data.set(cursor_pos.x + x_offset, cursor_pos.y, Cell{
+			data:            c_char
+			visual_width:    width
+			is_continuation: false
+			fg_color:        ctx.fg_color
+			bg_color:        ctx.bg_color
+			style:           ctx.style
 		}) or { break }
+
+		// Mark continuation cells for multi-width characters
+		for i in 1 .. width {
+			ctx.data.set(cursor_pos.x + x_offset + i, cursor_pos.y, Cell{
+				data:            none
+				visual_width:    0
+				is_continuation: true
+				fg_color:        ctx.fg_color
+				bg_color:        ctx.bg_color
+				style:           ctx.style
+			}) or { break }
+		}
+
+		x_offset += width
 	}
 }
 
@@ -436,6 +462,11 @@ fn (mut ctx Context) flush() {
 	for y in 0 .. ctx.data.height {
 		for x in 0 .. ctx.data.width {
 			cell := ctx.data.get(x, y) or { Cell{} }
+
+			// Skip continuation cells for multi-width characters
+			if cell.is_continuation {
+				continue
+			}
 
 			if prev_style := style {
 				ctx.ref.write(prev_style.close())

@@ -1,4 +1,3 @@
 module main
 
-const shark_g = "🦈"
-
+const shark_g = '🦈'
