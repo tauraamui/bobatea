@@ -2,6 +2,7 @@ module main
 
 import bobatea as tea
 import lib.draw
+import strings
 
 enum SessionState as u8 {
     timer
@@ -44,7 +45,14 @@ fn (m MainModel) view(mut ctx draw.Contextable) {
 
 	state := if m.state == .timer { "timer" } else { "spinner" }
     msg := "welcome to boba tea! ${state}"
-    ctx.draw_text((win_width / 2) - (msg.len / 2), win_height / 2, msg)
+    draw_text_in_box(mut ctx, (win_width / 2) - (msg.len / 2), win_height / 2, msg)
+}
+
+fn draw_text_in_box(mut ctx draw.Contextable, x int, y int, msg string) {
+	// TODO(tauraamui) [21/10/2025]: properly handle multi width runes
+	ctx.draw_text(x, y, "${tea.top_left}${strings.repeat_string(string(tea.top), msg.len)}${tea.top_right}")
+	ctx.draw_text(x, y + 1, "${tea.left}${msg}${tea.right}")
+	ctx.draw_text(x, y + 2, "${tea.bottom_left}${strings.repeat_string(string(tea.bottom), msg.len)}${tea.bottom_right}")
 }
 
 fn (m MainModel) clone() tea.Model {
