@@ -84,6 +84,8 @@ fn (mut app App) handle_event(msg Msg) {
 
 fn frame(mut app App) {
 	defer { app.event_invoked = false }
+	// NOTE(tauraamui) [21/10/2025]: basically, if the stdlib event loop hasn't invoked update
+	//                               due to a lack of an actual event, call it from frame anyway
 	if app.event_invoked == false {
 		app.handle_event(NoopMsg{})
 	}

@@ -19,9 +19,6 @@ fn (mut m MainModel) init() ?tea.Cmd {
 }
 
 fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
-    // NOTE(tauraamui): have to create manual non-mutable copy of the final
-    // returned model instance in order to not encounter catastrophic C level
-    // compiler panic
 	m.event_count += 1
 
     if msg is tea.KeyMsg {
@@ -32,16 +29,14 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
         if msg.code == .tab {
 	        m.state = if m.state == .timer { .spinner } else { .timer }
 			return MainModel{
-				state: m.state
-				event_count: m.event_count
+				...m
 			}, none
         }
 
 		if msg.code == .a {
 			m.event_count = 0
 			return MainModel{
-				state: m.state
-				event_count: m.event_count
+				...m
 			}, none
 		}
     }
@@ -50,7 +45,7 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
     return i_m, none
 }
 
-fn (mut m MainModel) view(mut ctx draw.Contextable) {
+fn (m MainModel) view(mut ctx draw.Contextable) {
     win_width := ctx.window_width()
     win_height := ctx.window_height()
 
