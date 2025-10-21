@@ -17,6 +17,7 @@ mut:
     init() ?Cmd
     update(Msg) (Model, ?Cmd)
     view(mut draw.Contextable)
+    clone() Model
 }
 
 pub interface Msg {}

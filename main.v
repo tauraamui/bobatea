@@ -14,6 +14,12 @@ mut:
 	event_count int
 }
 
+fn new_model() MainModel {
+    return MainModel{
+        state: .timer
+    }
+}
+
 fn (mut m MainModel) init() ?tea.Cmd {
     return none // no init required for now
 }
@@ -28,21 +34,16 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 
         if msg.code == .tab {
 	        m.state = if m.state == .timer { .spinner } else { .timer }
-			return MainModel{
-				...m
-			}, none
+	        return m.clone(), none
         }
 
 		if msg.code == .a {
 			m.event_count = 0
-			return MainModel{
-				...m
-			}, none
+			return m.clone(), none
 		}
     }
 
-    i_m := m
-    return i_m, none
+	return m.clone(), none
 }
 
 fn (m MainModel) view(mut ctx draw.Contextable) {
@@ -54,10 +55,10 @@ fn (m MainModel) view(mut ctx draw.Contextable) {
     ctx.draw_text((win_width / 2) - (msg.len / 2), win_height / 2, msg)
 }
 
-fn new_model() MainModel {
-    return MainModel{
-        state: .timer
-    }
+fn (m MainModel) clone() tea.Model {
+	return MainModel{
+		...m
+	}
 }
 
 fn main() {
