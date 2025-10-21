@@ -19,7 +19,7 @@ mut:
 
 fn new_model() MainModel {
 	return MainModel{
-		state: .timer
+		state: .spinner
 		spinner: spinner.Model.new()
 	}
 }
