@@ -44,7 +44,11 @@ fn noop_cmd() Msg {
 
 pub fn (mut app App) run() ! {
 	cmd := app.initial_model.init() or { noop_cmd }
-	cmd() // TODO(tauraamui): something with the initial msg?
+	models_msg := cmd()
+	if models_msg is QuitMsg {
+		app.quit() or { panic(err) }
+	}
+	app.next_msg = models_msg
 
 	ctx, run := draw.new_context(
 		render_debug:         false
