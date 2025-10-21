@@ -28,7 +28,7 @@ fn (mut m MainModel) init() ?tea.Cmd {
 
 fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
     if msg is tea.KeyMsg {
-        if msg.code == .escape {
+        if msg.code == .q {
             return MainModel{}, tea.quit
         }
 
@@ -42,9 +42,17 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 }
 
 fn (m MainModel) view(mut ctx draw.Contextable) {
+    win_height := ctx.window_height()
     draw_box(mut ctx, 2, 2, 15, 5, state_colors[m.state])
     // draw_box(mut ctx, 2, 2, 15, 5, draw.Color.ansi(69))
-    draw_box(mut ctx, 4, 4, 15, 5, draw.Color.ansi(241))
+    draw_box(mut ctx, 4, 4, 15, 5, draw.Color.ansi(162))
+    ctx.set_color(draw.Color.ansi(241))
+    mut help_text_y := win_height - 1
+    help_text_y = 10
+    ctx.draw_text(1, help_text_y, "tab: focus next • n: new <name> • q: exit")
+
+
+    ctx.reset_color()
 }
 
 fn draw_box(mut ctx draw.Contextable, x int, y int, width int, height int, border_color draw.Color) {
