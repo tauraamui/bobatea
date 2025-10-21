@@ -6,7 +6,7 @@ import lib.draw
 pub struct App {
     render_debug bool
 mut:
-	ui            &draw.Contextable = unsafe { nil }
+	ui            &Context = unsafe { nil }
     t_ref         &tui.Context
     initial_model Model
     event_invoked bool
@@ -16,7 +16,7 @@ pub interface Model {
 mut:
     init() ?Cmd
     update(Msg) (Model, ?Cmd)
-    view(mut draw.Contextable)
+    view(mut Context)
     clone() Model
 }
 

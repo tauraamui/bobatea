@@ -1,7 +1,6 @@
 module main
 
 import bobatea as tea
-import lib.draw
 import strings
 
 enum SessionState as u8 {
@@ -9,7 +8,7 @@ enum SessionState as u8 {
     spinner
 }
 
-const state_colors = [draw.Color.ansi(69), draw.Color.ansi(82)]
+const state_colors = [tea.Color.ansi(69), tea.Color.ansi(82)]
 
 struct MainModel {
 mut:
@@ -41,12 +40,12 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 	return m.clone(), none
 }
 
-fn (m MainModel) view(mut ctx draw.Contextable) {
+fn (m MainModel) view(mut ctx tea.Context) {
     win_height := ctx.window_height()
     draw_box(mut ctx, 2, 2, 15, 5, state_colors[m.state])
     // draw_box(mut ctx, 2, 2, 15, 5, draw.Color.ansi(69))
-    draw_box(mut ctx, 4, 4, 15, 5, draw.Color.ansi(162))
-    ctx.set_color(draw.Color.ansi(241))
+    // draw_box(mut ctx, 4, 4, 15, 5, tea.Color.ansi(162))
+    ctx.set_color(tea.Color.ansi(241))
     mut help_text_y := win_height - 1
     help_text_y = 10
     ctx.draw_text(1, help_text_y, "tab: focus next • n: new <name> • q: exit")
@@ -55,7 +54,7 @@ fn (m MainModel) view(mut ctx draw.Contextable) {
     ctx.reset_color()
 }
 
-fn draw_box(mut ctx draw.Contextable, x int, y int, width int, height int, border_color draw.Color) {
+fn draw_box(mut ctx tea.Context, x int, y int, width int, height int, border_color tea.Color) {
     ctx.set_color(border_color)
     defer { ctx.reset_color() }
     ctx.draw_text(x, y, "${tea.top_left}${strings.repeat_string(string(tea.top), width)}${tea.top_right}")
@@ -67,7 +66,7 @@ fn draw_box(mut ctx draw.Contextable, x int, y int, width int, height int, borde
 
 }
 
-fn draw_text_in_box(mut ctx draw.Contextable, x int, y int, msg string) {
+fn draw_text_in_box(mut ctx tea.Context, x int, y int, msg string) {
 	// TODO(tauraamui) [21/10/2025]: properly handle multi width runes
 	ctx.draw_text(x, y, "${tea.top_left}${strings.repeat_string(string(tea.top), msg.len)}${tea.top_right}")
 	ctx.draw_text(x, y + 1, "${tea.left}${msg}${tea.right}")
