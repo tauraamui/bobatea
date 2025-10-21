@@ -32,13 +32,6 @@ pub:
 	use_alternate_buffer bool = true
 }
 
-pub struct Color {
-pub:
-	r u8
-	g u8
-	b u8
-}
-
 pub type Runner = fn () !
 
 pub interface Drawer {
