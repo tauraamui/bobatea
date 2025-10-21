@@ -44,12 +44,8 @@ fn (m MainModel) view(mut ctx draw.Contextable) {
     win_height := ctx.window_height()
 
 	state := if m.state == .timer { "timer" } else { "spinner" }
-	/*
-    msg := "welcome to boba tea! ${state}"
-    draw_text_in_box(mut ctx, (win_width / 2) - (msg.len / 2), win_height / 2, msg)
-    */
-    draw_box(mut ctx, 2, 2, 15, 5, draw.Color{ 95, 135, 255 })
-    draw_box(mut ctx, 4, 4, 15, 5, draw.Color{ 215, 0, 0 })
+    draw_box(mut ctx, 2, 2, 15, 5, draw.Color.ansi(69))
+    draw_box(mut ctx, 4, 4, 15, 5, draw.Color.ansi(241))
 }
 
 fn draw_box(mut ctx draw.Contextable, x int, y int, width int, height int, border_color draw.Color) {
