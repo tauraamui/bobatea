@@ -14,7 +14,7 @@ mut:
     state SessionState
 }
 
-fn new_model(mut nums []int) MainModel {
+fn new_model() MainModel {
     return MainModel{
         state: .timer
     }
@@ -62,8 +62,7 @@ fn (m MainModel) clone() tea.Model {
 }
 
 fn main() {
-	mut numbers := [1, 10, 32, 99]
-    mut entry_model := new_model(mut numbers)
+    mut entry_model := new_model()
     mut app := tea.new_program(mut entry_model)
     app.run() or { panic("something went wrong! ${err}") }
 }
