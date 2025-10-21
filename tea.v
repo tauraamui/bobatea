@@ -105,7 +105,7 @@ fn frame(mut app App) {
 	//                               due to a lack of an actual event, call it from frame anyway
 	if app.event_invoked == false {
 	    msg := app.next_msg or { Msg(NoopMsg{}) }
-	    defer { app.next_msg = none }
+	    // defer { app.next_msg = none } // FIX(tauraamui) [21/10/2025]: properly handle caching messages, potentially use a queue
 		app.handle_event(msg)
 	}
 	app.ui.clear()
