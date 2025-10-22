@@ -14,6 +14,7 @@ struct MainModel {
 mut:
 	state   SessionState
 	spinner spinner.Model
+	spinner_index int
 }
 
 fn new_model() MainModel {
@@ -24,6 +25,7 @@ fn new_model() MainModel {
 }
 
 fn (mut m MainModel) init() ?tea.Cmd {
+    m.spinner.spinner = spinner.monkey
 	return m.spinner.tick
 }
 
