@@ -258,7 +258,7 @@ fn (mut ctx Context) pop_offset() {
 }
 
 fn (mut ctx Context) clear_offset() {
-    ctx.offsets.clear()
+	ctx.offsets.clear()
 }
 
 fn rune_visual_width(r rune) int {

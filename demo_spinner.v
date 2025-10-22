@@ -12,8 +12,8 @@ const state_colors = [tea.Color.ansi(69), tea.Color.ansi(82)]
 
 struct SpinnerModel {
 mut:
-	state   SessionState
-	spinner spinner.Model
+	state         SessionState
+	spinner       spinner.Model
 	spinner_index int
 }
 
@@ -25,7 +25,7 @@ fn new_spinner_model() SpinnerModel {
 }
 
 fn (mut m SpinnerModel) init() ?tea.Cmd {
-    m.spinner.spinner = spinner.monkey
+	m.spinner.spinner = spinner.monkey
 	return m.spinner.tick
 }
 
@@ -65,16 +65,16 @@ fn (mut m SpinnerModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 		else {}
 	}
 
-    cmds << m.spinner.tick // I don't understand how the Go version doesn't also need this
+	cmds << m.spinner.tick // I don't understand how the Go version doesn't also need this
 	return m.clone(), tea.batch_array(cmds)
 }
 
-const bordered_layout := tea.new_layout()
-    .size(17, 7)
-    .center()
-    .border(.normal)
-    .border_color(tea.Color.ansi(69))
-    .padding_all(1)
+const bordered_layout = tea.new_layout()
+	.size(17, 7)
+	.center()
+	.border(.normal)
+	.border_color(tea.Color.ansi(69))
+	.padding_all(1)
 
 const borderless_layout = bordered_layout.border(.none)
 
@@ -82,16 +82,16 @@ fn (m SpinnerModel) view(mut ctx tea.Context) {
 	mut layout := if m.state == .spinner { bordered_layout } else { borderless_layout }
 
 	layout.render(mut ctx, fn [m] (mut ctx tea.Context) {
-	    m.spinner.view(mut ctx)
+		m.spinner.view(mut ctx)
 	})
 
 	ctx.push_offset(tea.Offset{ x: 17 })
 	layout = if m.state == .spinner { borderless_layout } else { bordered_layout }
 
 	layout.render(mut ctx, fn [m] (mut ctx tea.Context) {
-        ctx.push_offset(tea.Offset{ x: -1 })
-        ctx.draw_text(0, 0, shark_g)
-        ctx.pop_offset()
+		ctx.push_offset(tea.Offset{ x: -1 })
+		ctx.draw_text(0, 0, shark_g)
+		ctx.pop_offset()
 	})
 	ctx.pop_offset()
 
@@ -108,4 +108,3 @@ fn (m SpinnerModel) clone() tea.Model {
 		...m
 	}
 }
-

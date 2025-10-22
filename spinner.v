@@ -3,7 +3,7 @@ module spinner
 import bobatea as tea
 
 pub const line = Spinner{
-	frames: ["|", "/", "-", "\\"]
+	frames: ['|', '/', '-', '\\']
 }
 
 pub const dot = Spinner{
@@ -11,52 +11,54 @@ pub const dot = Spinner{
 }
 
 pub const mini_dot = Spinner{
-	frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+	frames: ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 }
 
 pub const jump = Spinner{
-	frames: ["⢄", "⢂", "⢁", "⡁", "⡈", "⡐", "⡠"]
+	frames: ['⢄', '⢂', '⢁', '⡁', '⡈', '⡐', '⡠']
 }
 
 pub const pulse = Spinner{
-	frames: ["█", "▓", "▒", "░"]
+	frames: ['█', '▓', '▒', '░']
 }
 
 pub const points = Spinner{
-	frames: ["∙∙∙", "●∙∙", "∙●∙", "∙∙●"]
+	frames: ['∙∙∙', '●∙∙', '∙●∙', '∙∙●']
 }
 
 pub const globe = Spinner{
-	frames: ["🌍", "🌎", "🌏"]
+	frames: ['🌍', '🌎', '🌏']
 }
 
 pub const moon = Spinner{
-	frames: ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"]
+	frames: ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘']
 }
 
 pub const monkey = Spinner{
-	frames: ["🙈", "🙉", "🙊"]
-	offset: tea.Offset{ x: -1 }
+	frames: ['🙈', '🙉', '🙊']
+	offset: tea.Offset{
+		x: -1
+	}
 }
 
 pub const meter = Spinner{
 	frames: [
-		"▱▱▱",
-		"▰▱▱",
-		"▰▰▱",
-		"▰▰▰",
-		"▰▰▱",
-		"▰▱▱",
-		"▱▱▱",
+		'▱▱▱',
+		'▰▱▱',
+		'▰▰▱',
+		'▰▰▰',
+		'▰▰▱',
+		'▰▱▱',
+		'▱▱▱',
 	]
 }
 
 pub const hamburger = Spinner{
-	frames: ["☱", "☲", "☴", "☲"]
+	frames: ['☱', '☲', '☴', '☲']
 }
 
 pub const ellipsis = Spinner{
-	frames: ["", ".", "..", "..."]
+	frames: ['', '.', '..', '...']
 }
 
 struct Spinner {
@@ -68,7 +70,7 @@ pub struct Model {
 pub mut:
 	spinner Spinner
 mut:
-	frame   int
+	frame int
 }
 
 pub fn Model.new() Model {

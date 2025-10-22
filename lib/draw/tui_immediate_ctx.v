@@ -70,7 +70,7 @@ fn (mut ctx ImmediateContext) pop_offset() {
 }
 
 fn (mut ctx ImmediateContext) clear_offset() {
-    ctx.offsets.clear()
+	ctx.offsets.clear()
 }
 
 fn (mut ctx ImmediateContext) set_cursor_position(x int, y int) {
