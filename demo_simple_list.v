@@ -79,6 +79,11 @@ fn (m SimpleListModel) view(mut ctx tea.Context) {
         ctx.push_offset(tea.Offset{ y: 1 })
         ctx.reset_color()
     }
+
+    ctx.push_offset(tea.Offset{ y: 3 })
+    ctx.set_color(tea.Color.ansi(241))
+    ctx.draw_text(2, 0, "↑/k up • q: exit")
+    ctx.reset_color()
 }
 
 fn (m SimpleListModel) clone() tea.Model {
