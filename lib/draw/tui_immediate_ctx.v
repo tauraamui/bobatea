@@ -19,7 +19,7 @@ import term.ui as tui
 struct ImmediateContext {
 	render_debug bool
 mut:
-	ref &tui.Context
+	ref     &tui.Context
 	offsets []Offset
 }
 
@@ -58,13 +58,15 @@ fn (mut ctx ImmediateContext) window_height() int {
 	return ctx.ref.window_height
 }
 
-fn (mut ctx ImmediateContext) push_offset(x int, y int) {
-    ctx.offsets.prepend(Offset{ x, y })
+fn (mut ctx ImmediateContext) push_offset(o Offset) {
+	ctx.offsets.prepend(o)
 }
 
 fn (mut ctx ImmediateContext) pop_offset() {
-    if ctx.offsets.len == 0 { return }
-    ctx.offsets.delete_last() // just remove, don't actually care about value
+	if ctx.offsets.len == 0 {
+		return
+	}
+	ctx.offsets.delete_last() // just remove, don't actually care about value
 }
 
 fn (mut ctx ImmediateContext) set_cursor_position(x int, y int) {
@@ -97,13 +99,13 @@ fn (mut ctx ImmediateContext) draw_text(x int, y int, text string) {
 }
 
 fn apply_offsets(offsets []Offset, x int, y int) (int, int) {
-    mut xx := x
-    mut yy := y
-    for o in offsets {
-        xx += o.x
-        yy += o.y
-    }
-    return xx, yy
+	mut xx := x
+	mut yy := y
+	for o in offsets {
+		xx += o.x
+		yy += o.y
+	}
+	return xx, yy
 }
 
 fn (mut ctx ImmediateContext) write(c string) {

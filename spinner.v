@@ -43,7 +43,7 @@ pub fn (mut m Model) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 }
 
 pub fn (m Model) view(mut ctx tea.Context) {
-	ctx.draw_text(1, 1, m.spinner.frames[m.frame])
+	ctx.draw_text(0, 0, m.spinner.frames[m.frame])
 }
 
 pub fn (m Model) tick() tea.Msg {

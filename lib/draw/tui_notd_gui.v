@@ -156,9 +156,9 @@ enum CursorStyle as u8 {
 	vertical_bar
 }
 
-struct Offset {
-    x int
-    y int
+pub struct Offset {
+	x int
+	y int
 }
 
 struct Context {
@@ -246,13 +246,15 @@ fn (mut ctx Context) window_height() int {
 	return ctx.ref.window_height
 }
 
-fn (mut ctx Context) push_offset(x int, y int) {
-    ctx.offsets.prepend(Offset{ x, y })
+fn (mut ctx Context) push_offset(o Offset) {
+	ctx.offsets.prepend(o)
 }
 
 fn (mut ctx Context) pop_offset() {
-    if ctx.offsets.len == 0 { return }
-    ctx.offsets.delete_last() // just remove, don't actually care about value
+	if ctx.offsets.len == 0 {
+		return
+	}
+	ctx.offsets.delete_last() // just remove, don't actually care about value
 }
 
 fn rune_visual_width(r rune) int {
