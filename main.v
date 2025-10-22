@@ -65,6 +65,7 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 		else {}
 	}
 
+    cmds << m.spinner.tick // I don't understand how the Go version doesn't also need this
 	return m.clone(), tea.batch_array(cmds)
 }
 
