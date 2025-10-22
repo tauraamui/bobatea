@@ -1,5 +1,7 @@
 module main
 
+import os
+import flag
 import bobatea as tea
 import spinner
 
@@ -10,32 +12,32 @@ enum SessionState as u8 {
 
 const state_colors = [tea.Color.ansi(69), tea.Color.ansi(82)]
 
-struct MainModel {
+struct SpinnerModel {
 mut:
 	state   SessionState
 	spinner spinner.Model
 	spinner_index int
 }
 
-fn new_model() MainModel {
-	return MainModel{
+fn new_spinner_model() SpinnerModel {
+	return SpinnerModel{
 		state:   .spinner
 		spinner: spinner.Model.new()
 	}
 }
 
-fn (mut m MainModel) init() ?tea.Cmd {
+fn (mut m SpinnerModel) init() ?tea.Cmd {
     m.spinner.spinner = spinner.monkey
 	return m.spinner.tick
 }
 
-fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
+fn (mut m SpinnerModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 	mut cmds := []tea.Cmd{}
 	match msg {
 		tea.KeyMsg {
 			match msg.code {
 				.q {
-					return MainModel{}, tea.quit
+					return SpinnerModel{}, tea.quit
 				}
 				.tab {
 					m.state = if m.state == .timer { .spinner } else { .timer }
@@ -78,7 +80,7 @@ const bordered_layout := tea.new_layout()
 
 const borderless_layout = bordered_layout.border(.none)
 
-fn (m MainModel) view(mut ctx tea.Context) {
+fn (m SpinnerModel) view(mut ctx tea.Context) {
 	mut layout := if m.state == .spinner { bordered_layout } else { borderless_layout }
 
 	layout.render(mut ctx, fn [m] (mut ctx tea.Context) {
@@ -103,14 +105,51 @@ fn (m MainModel) view(mut ctx tea.Context) {
 	ctx.reset_color()
 }
 
-fn (m MainModel) clone() tea.Model {
-	return MainModel{
+fn (m SpinnerModel) clone() tea.Model {
+	return SpinnerModel{
 		...m
 	}
 }
 
 fn main() {
-	mut entry_model := new_model()
+	mut fp := flag.new_flag_parser(os.args)
+	fp.application('bobatea')
+	fp.version('0.1.0')
+	fp.description('Bobatea example applications')
+	fp.skip_executable()
+	
+	spinner_demo := fp.bool('spinner', `s`, false, 'Run the spinner demo')
+	simple_list := fp.bool('simple-list', `l`, false, 'Run the simple list demo')
+	
+	fp.finalize() or {
+		eprintln(err)
+		exit(1)
+	}
+	
+	match true {
+		spinner_demo {
+			run_spinner_demo()
+		}
+		simple_list {
+			run_simple_list_demo()
+		}
+		else {
+			eprintln('Please specify a demo to run:')
+			eprintln('  --spinner, -s    Run the spinner demo')
+			eprintln('  --simple-list, -l Run the simple list demo')
+			eprintln('  --help, -h       Show this help')
+			exit(1)
+		}
+	}
+}
+
+fn run_spinner_demo() {
+	mut entry_model := new_spinner_model()
 	mut app := tea.new_program(mut entry_model)
 	app.run() or { panic('something went wrong! ${err}') }
+}
+
+fn run_simple_list_demo() {
+	eprintln('Simple list demo not implemented yet')
+	exit(1)
 }
