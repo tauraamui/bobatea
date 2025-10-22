@@ -19,41 +19,47 @@ mut:
 
 fn new_model() MainModel {
 	return MainModel{
-		state: .spinner
+		state:   .spinner
 		spinner: spinner.Model.new()
 	}
 }
 
 fn (mut m MainModel) init() ?tea.Cmd {
-    return m.spinner.tick
+	return m.spinner.tick
 }
 
 fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
-    match msg {
-        tea.KeyMsg {
-            match msg.code {
-                .q { return MainModel{}, tea.quit }
-                .tab {
-                    m.state = if m.state == .timer { .spinner } else { .timer }
-                }
-                else {}
-            }
-            match m.state {
-                .spinner {
-                    s, cmd := m.spinner.update(msg)
-                    if s is spinner.Model { m.spinner = s }
-                    return m.clone(), cmd
-                }
-                else {}
-            }
-        }
-        spinner.TickMsg {
-            s, cmd := m.spinner.update(msg)
-            if s is spinner.Model { m.spinner = s }
-            return m.clone(), cmd
-        }
-        else {}
-    }
+	match msg {
+		tea.KeyMsg {
+			match msg.code {
+				.q {
+					return MainModel{}, tea.quit
+				}
+				.tab {
+					m.state = if m.state == .timer { .spinner } else { .timer }
+				}
+				else {}
+			}
+			match m.state {
+				.spinner {
+					s, cmd := m.spinner.update(msg)
+					if s is spinner.Model {
+						m.spinner = s
+					}
+					return m.clone(), cmd
+				}
+				else {}
+			}
+		}
+		spinner.TickMsg {
+			s, cmd := m.spinner.update(msg)
+			if s is spinner.Model {
+				m.spinner = s
+			}
+			return m.clone(), cmd
+		}
+		else {}
+	}
 
 	return m.clone(), none
 }

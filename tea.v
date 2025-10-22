@@ -13,6 +13,11 @@ mut:
 	next_msg      ?Msg
 }
 
+pub type Cmd = fn () Msg
+
+// Command represents either a single command or a batch of commands
+pub type Command = Cmd | BatchMsg | SequenceMsg
+
 pub interface Model {
 mut:
 	init() ?Cmd
@@ -28,13 +33,108 @@ pub:
 	code tui.KeyCode
 }
 
+pub struct QuitMsg {}
+
 pub fn quit() Msg {
 	return QuitMsg{}
 }
 
-pub struct QuitMsg {}
+pub type BatchMsg = []Cmd
 
-pub type Cmd = fn () Msg
+pub type SequenceMsg = []Cmd
+
+pub fn batch(cmds ...Cmd) Cmd {
+	mut valid_cmds := []Cmd{}
+	for cmd in cmds {
+		if !isnil(cmd) {
+			valid_cmds << cmd
+		}
+	}
+	match valid_cmds.len {
+		0 {
+			return noop_cmd
+		}
+		1 {
+			return valid_cmds[0]
+		}
+		else {
+			return fn [valid_cmds] () Msg {
+				return BatchMsg(valid_cmds)
+			}
+		}
+	}
+}
+
+// sequence runs the given commands one at a time, in order. Contrast this with
+// batch, which runs commands concurrently.
+pub fn sequence(cmds ...Cmd) Cmd {
+	mut valid_cmds := []Cmd{}
+	for cmd in cmds {
+		if !isnil(cmd) {
+			valid_cmds << cmd
+		}
+	}
+	match valid_cmds.len {
+		0 {
+			return noop_cmd
+		}
+		1 {
+			return valid_cmds[0]
+		}
+		else {
+			return fn [valid_cmds] () Msg {
+				return SequenceMsg(valid_cmds)
+			}
+		}
+	}
+}
+
+// batch_array creates a batch command from an array of commands
+pub fn batch_array(cmds []Cmd) Cmd {
+	mut valid_cmds := []Cmd{}
+	for cmd in cmds {
+		if !isnil(cmd) {
+			valid_cmds << cmd
+		}
+	}
+	match valid_cmds.len {
+		0 {
+			return noop_cmd
+		}
+		1 {
+			return valid_cmds[0]
+		}
+		else {
+			return fn [valid_cmds] () Msg {
+				return BatchMsg(valid_cmds)
+			}
+		}
+	}
+}
+
+// batch_optional creates a batch command from an array of optional commands,
+// filtering out none values
+pub fn batch_optional(cmds []?Cmd) Cmd {
+	mut valid_cmds := []Cmd{}
+	for cmd in cmds {
+		if c := cmd {
+			valid_cmds << c
+		}
+	}
+	match valid_cmds.len {
+		0 {
+			return noop_cmd
+		}
+		1 {
+			return valid_cmds[0]
+		}
+		else {
+			return fn [valid_cmds] () Msg {
+				return BatchMsg(valid_cmds)
+			}
+		}
+	}
+}
 
 struct NoopMsg {}
 
@@ -106,15 +206,15 @@ fn (mut app App) handle_event(msg Msg) {
 //                               didn't fire, so that the initial model can still update logic per iter
 fn frame(mut app App) {
 	defer {
-	    app.event_invoked = false
+		app.event_invoked = false
 	}
 	// NOTE(tauraamui) [21/10/2025]: basically, if the stdlib event loop hasn't invoked update
 	//                               due to a lack of an actual event, call it from frame anyway
 	if app.event_invoked == false {
-	    msg := app.next_msg or { Msg(NoopMsg{}) }
-	    if app.next_msg != none {
-	        app.next_msg = none
-	    }
+		msg := app.next_msg or { Msg(NoopMsg{}) }
+		if app.next_msg != none {
+			app.next_msg = none
+		}
 		app.handle_event(msg)
 	}
 	app.ui.clear()
