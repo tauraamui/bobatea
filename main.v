@@ -29,6 +29,7 @@ fn (mut m MainModel) init() ?tea.Cmd {
 }
 
 fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
+	mut cmds := []tea.Cmd{}
 	match msg {
 		tea.KeyMsg {
 			match msg.code {
@@ -46,7 +47,8 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 					if s is spinner.Model {
 						m.spinner = s
 					}
-					return m.clone(), cmd
+					u_cmd := cmd or { tea.noop_cmd }
+					cmds << u_cmd
 				}
 				else {}
 			}
@@ -56,12 +58,13 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 			if s is spinner.Model {
 				m.spinner = s
 			}
-			return m.clone(), cmd
+			u_cmd := cmd or { tea.noop_cmd }
+			cmds << u_cmd
 		}
 		else {}
 	}
 
-	return m.clone(), none
+	return m.clone(), tea.batch_array(cmds)
 }
 
 fn (m MainModel) view(mut ctx tea.Context) {

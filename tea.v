@@ -139,7 +139,7 @@ pub fn batch_optional(cmds []?Cmd) Cmd {
 
 struct NoopMsg {}
 
-fn noop_cmd() Msg {
+pub fn noop_cmd() Msg {
 	return NoopMsg{}
 }
 
