@@ -257,6 +257,10 @@ fn (mut ctx Context) pop_offset() {
 	ctx.offsets.delete_last() // just remove, don't actually care about value
 }
 
+fn (mut ctx Context) clear_offset() {
+    ctx.offsets.clear()
+}
+
 fn rune_visual_width(r rune) int {
 	return utf8_str_visible_length(r.str())
 }

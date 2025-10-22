@@ -65,6 +65,7 @@ mut:
 
 	push_offset(o Offset)
 	pop_offset()
+	clear_offset()
 
 	set_cursor_position(x int, y int)
 	set_cursor_to_block()

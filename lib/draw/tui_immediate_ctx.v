@@ -69,6 +69,10 @@ fn (mut ctx ImmediateContext) pop_offset() {
 	ctx.offsets.delete_last() // just remove, don't actually care about value
 }
 
+fn (mut ctx ImmediateContext) clear_offset() {
+    ctx.offsets.clear()
+}
+
 fn (mut ctx ImmediateContext) set_cursor_position(x int, y int) {
 	ctx.ref.set_cursor_position(x, y)
 }
