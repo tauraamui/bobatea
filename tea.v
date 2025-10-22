@@ -145,10 +145,22 @@ fn noop_cmd() Msg {
 pub fn (mut app App) run() ! {
 	cmd := app.initial_model.init() or { noop_cmd }
 	models_msg := cmd()
-	if models_msg is QuitMsg {
-		app.quit() or { panic(err) }
+
+	// Handle initial command message
+	match models_msg {
+		QuitMsg {
+			app.quit() or { panic(err) }
+		}
+		BatchMsg {
+			app.exec_batch_msg(models_msg)
+		}
+		SequenceMsg {
+			app.exec_sequence_msg(models_msg)
+		}
+		else {
+			app.next_msg = models_msg
+		}
 	}
-	app.next_msg = models_msg
 
 	ctx, run := draw.new_context(
 		render_debug:         false
@@ -191,6 +203,19 @@ fn event(e draw.Event, mut app App) {
 }
 
 fn (mut app App) handle_event(msg Msg) {
+	// Handle special batch and sequence messages
+	match msg {
+		BatchMsg {
+			app.exec_batch_msg(msg)
+			return
+		}
+		SequenceMsg {
+			app.exec_sequence_msg(msg)
+			return
+		}
+		else {}
+	}
+
 	m, cmd := app.initial_model.update(msg)
 	app.initial_model = m
 	u_cmd := cmd or { noop_cmd }
@@ -199,6 +224,53 @@ fn (mut app App) handle_event(msg Msg) {
 		app.quit() or { panic(err) }
 	}
 	app.next_msg = models_msg
+}
+
+// exec_batch_msg executes commands concurrently using spawn
+fn (mut app App) exec_batch_msg(batch_msg BatchMsg) {
+	for cmd in batch_msg {
+		if isnil(cmd) {
+			continue
+		}
+		go app.exec_cmd(cmd)
+	}
+}
+
+// exec_sequence_msg executes commands one at a time in order
+fn (mut app App) exec_sequence_msg(seq_msg SequenceMsg) {
+	for cmd in seq_msg {
+		if isnil(cmd) {
+			continue
+		}
+		msg := cmd()
+		match msg {
+			BatchMsg {
+				app.exec_batch_msg(msg)
+			}
+			SequenceMsg {
+				app.exec_sequence_msg(msg)
+			}
+			else {
+				app.handle_event(msg)
+			}
+		}
+	}
+}
+
+// exec_cmd executes a single command and handles the result
+fn (mut app App) exec_cmd(cmd Cmd) {
+	msg := cmd()
+	match msg {
+		BatchMsg {
+			app.exec_batch_msg(msg)
+		}
+		SequenceMsg {
+			app.exec_sequence_msg(msg)
+		}
+		else {
+			app.handle_event(msg)
+		}
+	}
 }
 
 // NOTE(tauraamui) [22/10/2025]: this function is called on each iteration of runtime loop directly
