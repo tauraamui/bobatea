@@ -39,6 +39,26 @@ pub const monkey = Spinner{
 	offset: tea.Offset{ x: -1 }
 }
 
+pub const meter = Spinner{
+	frames: [
+		"▱▱▱",
+		"▰▱▱",
+		"▰▰▱",
+		"▰▰▰",
+		"▰▰▱",
+		"▰▱▱",
+		"▱▱▱",
+	]
+}
+
+pub const hamburger = Spinner{
+	frames: ["☱", "☲", "☴", "☲"]
+}
+
+pub const ellipsis = Spinner{
+	frames: ["", ".", "..", "..."]
+}
+
 struct Spinner {
 	frames []string
 	offset tea.Offset
