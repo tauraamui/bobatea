@@ -67,6 +67,8 @@ fn (mut app App) quit() ! {
 	exit(0)
 }
 
+// NOTE(tauraamui) [22/10/2025]: this is invoked by the underlying runtime loop directly only
+//                               when an actual event comes in, (keypress/resize, etc.,)
 fn event(e draw.Event, mut app App) {
 	defer { app.event_invoked = true }
 	msg := match e.typ {
@@ -99,6 +101,9 @@ fn (mut app App) handle_event(msg Msg) {
 	app.next_msg = models_msg
 }
 
+// NOTE(tauraamui) [22/10/2025]: this function is called on each iteration of runtime loop directly
+//                               we invoke the update loop of initial model here if an actual event
+//                               didn't fire, so that the initial model can still update logic per iter
 fn frame(mut app App) {
 	defer { app.event_invoked = false }
 	// NOTE(tauraamui) [21/10/2025]: basically, if the stdlib event loop hasn't invoked update
