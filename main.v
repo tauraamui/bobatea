@@ -67,9 +67,18 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 	return m.clone(), tea.batch_array(cmds)
 }
 
+const bordered_layout = tea.new_layout()
+	.size(17, 7)
+	.center()
+	.border(.rounded)
+	.border_color(tea.Color.ansi(69))
+	.padding_all(1)
+
+const borderless_layout = bordered_layout.border(.none)
+
 fn (m MainModel) view(mut ctx tea.Context) {
 	win_height := ctx.window_height()
-	layout := tea.centered_box(17, 7)
+	mut layout := if m.state == .spinner { bordered_layout } else { borderless_layout }
 	layout.render(mut ctx, fn [m] (mut ctx tea.Context) {
 		match m.state {
 			.spinner {
@@ -81,8 +90,23 @@ fn (m MainModel) view(mut ctx tea.Context) {
 				ctx.pop_offset()
 			}
 		}
-		// m.spinner.view(mut ctx)
 	})
+	ctx.push_offset(tea.Offset{ x: 18 })
+	layout = if m.state == .spinner { borderless_layout } else { bordered_layout }
+	layout.render(mut ctx, fn [m] (mut ctx tea.Context) {
+		match m.state {
+			.spinner {
+				m.spinner.view(mut ctx)
+			}
+			.timer {
+				ctx.push_offset(tea.Offset{ x: -1 })
+				ctx.draw_text(0, 0, shark_g)
+				ctx.pop_offset()
+			}
+		}
+	})
+	ctx.pop_offset()
+
 	ctx.set_color(tea.Color.ansi(241))
 	mut help_text_y := win_height - 1
 	help_text_y = 10

@@ -1,5 +1,7 @@
 module bobatea
 
+import lib.draw
+
 pub enum Alignment {
 	start
 	center
@@ -24,15 +26,33 @@ pub:
 
 pub struct Layout {
 pub:
-	alignment_x Alignment = .start
-	alignment_y Alignment = .start
-	width       int
-	height      int
-	padding     Padding
-	border      BorderStyle = .none
+	alignment_x  Alignment = .start
+	alignment_y  Alignment = .start
+	width        int
+	height       int
+	padding      Padding
+	border       BorderStyle = .none
+	border_color ?draw.Color
+	bg_color     ?draw.Color
+	fg_color     ?draw.Color
 }
 
 pub fn (l Layout) render(mut ctx Context, content_fn fn (mut Context)) {
+	// Apply background color if specified
+	if bg := l.bg_color {
+		ctx.set_bg_color(bg)
+		for y in 0 .. l.height {
+			for x in 0 .. l.width {
+				ctx.draw_text(x, y, ' ')
+			}
+		}
+	}
+
+	// Apply foreground color if specified
+	if fg := l.fg_color {
+		ctx.set_color(fg)
+	}
+
 	// Draw border if specified
 	if l.border != .none {
 		l.draw_border(mut ctx)
@@ -63,9 +83,22 @@ pub fn (l Layout) render(mut ctx Context, content_fn fn (mut Context)) {
 	ctx.push_offset(Offset{total_offset_x, total_offset_y})
 	content_fn(mut ctx)
 	ctx.pop_offset()
+
+	// Reset colors after rendering
+	if l.fg_color != none {
+		ctx.reset_color()
+	}
+	if l.bg_color != none {
+		ctx.reset_bg_color()
+	}
 }
 
 fn (l Layout) draw_border(mut ctx Context) {
+	// Apply border color if specified
+	if border_color := l.border_color {
+		ctx.set_color(border_color)
+	}
+
 	match l.border {
 		.normal {
 			l.draw_normal_border(mut ctx)
@@ -80,6 +113,11 @@ fn (l Layout) draw_border(mut ctx Context) {
 			l.draw_double_border(mut ctx)
 		}
 		.none {}
+	}
+
+	// Reset border color after drawing
+	if l.border_color != none {
+		ctx.reset_color()
 	}
 }
 
@@ -183,7 +221,133 @@ fn (l Layout) draw_double_border(mut ctx Context) {
 	}
 }
 
+// Immutable chaining methods for styling
+pub fn (l Layout) width(w int) Layout {
+	return Layout{
+		...l
+		width: w
+	}
+}
+
+pub fn (l Layout) height(h int) Layout {
+	return Layout{
+		...l
+		height: h
+	}
+}
+
+pub fn (l Layout) size(w int, h int) Layout {
+	return Layout{
+		...l
+		width:  w
+		height: h
+	}
+}
+
+pub fn (l Layout) border(style BorderStyle) Layout {
+	return Layout{
+		...l
+		border: style
+	}
+}
+
+pub fn (l Layout) border_color(color draw.Color) Layout {
+	return Layout{
+		...l
+		border_color: color
+	}
+}
+
+pub fn (l Layout) background(color draw.Color) Layout {
+	return Layout{
+		...l
+		bg_color: color
+	}
+}
+
+pub fn (l Layout) foreground(color draw.Color) Layout {
+	return Layout{
+		...l
+		fg_color: color
+	}
+}
+
+pub fn (l Layout) align_x(alignment Alignment) Layout {
+	return Layout{
+		...l
+		alignment_x: alignment
+	}
+}
+
+pub fn (l Layout) align_y(alignment Alignment) Layout {
+	return Layout{
+		...l
+		alignment_y: alignment
+	}
+}
+
+pub fn (l Layout) align(x_alignment Alignment, y_alignment Alignment) Layout {
+	return Layout{
+		...l
+		alignment_x: x_alignment
+		alignment_y: y_alignment
+	}
+}
+
+pub fn (l Layout) center() Layout {
+	return Layout{
+		...l
+		alignment_x: .center
+		alignment_y: .center
+	}
+}
+
+pub fn (l Layout) padding(p Padding) Layout {
+	return Layout{
+		...l
+		padding: p
+	}
+}
+
+pub fn (l Layout) padding_all(amount int) Layout {
+	return Layout{
+		...l
+		padding: Padding{
+			top:    amount
+			bottom: amount
+			left:   amount
+			right:  amount
+		}
+	}
+}
+
+pub fn (l Layout) padding_horizontal(amount int) Layout {
+	return Layout{
+		...l
+		padding: Padding{
+			...l.padding
+			left:  amount
+			right: amount
+		}
+	}
+}
+
+pub fn (l Layout) padding_vertical(amount int) Layout {
+	return Layout{
+		...l
+		padding: Padding{
+			...l.padding
+			top:    amount
+			bottom: amount
+		}
+	}
+}
+
 // Convenience constructors
+pub fn new_layout() Layout {
+	return Layout{}
+}
+
 pub fn box(width int, height int) Layout {
 	return Layout{
 		width:  width
