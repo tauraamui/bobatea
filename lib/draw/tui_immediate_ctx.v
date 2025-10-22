@@ -20,6 +20,7 @@ struct ImmediateContext {
 	render_debug bool
 mut:
 	ref &tui.Context
+	offsets []Offset
 }
 
 type Runner = fn () !
@@ -57,6 +58,15 @@ fn (mut ctx ImmediateContext) window_height() int {
 	return ctx.ref.window_height
 }
 
+fn (mut ctx ImmediateContext) push_offset(x int, y int) {
+    ctx.offsets.prepend(Offset{ x, y })
+}
+
+fn (mut ctx ImmediateContext) pop_offset() {
+    if ctx.offsets.len == 0 { return }
+    ctx.offsets.delete_last() // just remove, don't actually care about value
+}
+
 fn (mut ctx ImmediateContext) set_cursor_position(x int, y int) {
 	ctx.ref.set_cursor_position(x, y)
 }
@@ -82,7 +92,18 @@ fn (mut ctx ImmediateContext) hide_cursor() {
 }
 
 fn (mut ctx ImmediateContext) draw_text(x int, y int, text string) {
-	ctx.ref.draw_text(x, y, text)
+	xx, yy := apply_offsets(ctx.offsets, x, y)
+	ctx.ref.draw_text(xx, yy, text)
+}
+
+fn apply_offsets(offsets []Offset, x int, y int) (int, int) {
+    mut xx := x
+    mut yy := y
+    for o in offsets {
+        xx += o.x
+        yy += o.y
+    }
+    return xx, yy
 }
 
 fn (mut ctx ImmediateContext) write(c string) {

@@ -73,7 +73,9 @@ fn (m MainModel) view(mut ctx tea.Context) {
 	// draw_box(mut ctx, 2, 2, 15, 5, state_colors[m.state])
 	// draw_box(mut ctx, 2, 2, 15, 5, draw.Color.ansi(69))
 	// draw_box(mut ctx, 4, 4, 15, 5, tea.Color.ansi(162))
+	ctx.push_offset(3, 0)
 	m.spinner.view(mut ctx)
+	ctx.pop_offset()
 	ctx.set_color(tea.Color.ansi(241))
 	mut help_text_y := win_height - 1
 	help_text_y = 10

@@ -63,6 +63,9 @@ mut:
 	window_width() int
 	window_height() int
 
+    push_offset(x int, y int)
+    pop_offset()
+
 	set_cursor_position(x int, y int)
 	set_cursor_to_block()
 	set_cursor_to_underline()

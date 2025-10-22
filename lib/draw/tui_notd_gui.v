@@ -156,6 +156,11 @@ enum CursorStyle as u8 {
 	vertical_bar
 }
 
+struct Offset {
+    x int
+    y int
+}
+
 struct Context {
 	render_debug     bool
 	default_bg_color ?tui.Color
@@ -171,6 +176,7 @@ mut:
 	bold           bool
 	fg_color       ?Color
 	bg_color       ?Color
+	offsets        []Offset
 }
 
 interface NativeContext {
@@ -238,6 +244,15 @@ fn (mut ctx Context) window_height() int {
 		return 100
 	}
 	return ctx.ref.window_height
+}
+
+fn (mut ctx Context) push_offset(x int, y int) {
+    ctx.offsets.prepend(Offset{ x, y })
+}
+
+fn (mut ctx Context) pop_offset() {
+    if ctx.offsets.len == 0 { return }
+    ctx.offsets.delete_last() // just remove, don't actually care about value
 }
 
 fn rune_visual_width(r rune) int {
@@ -353,7 +368,9 @@ fn (mut ctx Context) draw_point(x int, y int) {
 }
 
 fn (mut ctx Context) draw_text(x int, y int, text string) {
-	ctx.set_cursor_position(x, y)
+	xx, yy := apply_offsets(ctx.offsets, x, y)
+
+	ctx.set_cursor_position(xx, yy)
 	ctx.write(text)
 }
 
