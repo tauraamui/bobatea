@@ -11,6 +11,7 @@ mut:
 	initial_model Model
 	event_invoked bool
 	next_msg      ?Msg
+	msg_queue     shared []Msg // Queue for messages from batch commands
 }
 
 pub type Cmd = fn () Msg
@@ -226,13 +227,13 @@ fn (mut app App) handle_event(msg Msg) {
 	app.next_msg = models_msg
 }
 
-// exec_batch_msg executes commands concurrently using spawn
+// exec_batch_msg executes commands concurrently using go
 fn (mut app App) exec_batch_msg(batch_msg BatchMsg) {
 	for cmd in batch_msg {
 		if isnil(cmd) {
 			continue
 		}
-		go app.exec_cmd(cmd)
+		go app.exec_cmd_async(cmd)
 	}
 }
 
@@ -251,14 +252,14 @@ fn (mut app App) exec_sequence_msg(seq_msg SequenceMsg) {
 				app.exec_sequence_msg(msg)
 			}
 			else {
-				app.handle_event(msg)
+				app.send(msg)
 			}
 		}
 	}
 }
 
-// exec_cmd executes a single command and handles the result
-fn (mut app App) exec_cmd(cmd Cmd) {
+// exec_cmd_async executes a single command asynchronously and sends result to queue
+fn (mut app App) exec_cmd_async(cmd Cmd) {
 	msg := cmd()
 	match msg {
 		BatchMsg {
@@ -268,7 +269,33 @@ fn (mut app App) exec_cmd(cmd Cmd) {
 			app.exec_sequence_msg(msg)
 		}
 		else {
+			app.send(msg)
+		}
+	}
+}
+
+// send adds a message to the queue for processing
+fn (mut app App) send(msg Msg) {
+	lock app.msg_queue {
+		app.msg_queue << msg
+	}
+}
+
+// process_queued_messages processes all messages in the queue
+fn (mut app App) process_queued_messages() {
+	for {
+		mut msg_to_process := ?Msg(none)
+		lock app.msg_queue {
+			if app.msg_queue.len > 0 {
+				msg_to_process = app.msg_queue[0]
+				app.msg_queue.delete(0)
+			}
+		}
+
+		if msg := msg_to_process {
 			app.handle_event(msg)
+		} else {
+			break
 		}
 	}
 }
@@ -280,6 +307,10 @@ fn frame(mut app App) {
 	defer {
 		app.event_invoked = false
 	}
+
+	// Process any queued messages from batch commands first
+	app.process_queued_messages()
+
 	// NOTE(tauraamui) [21/10/2025]: basically, if the stdlib event loop hasn't invoked update
 	//                               due to a lack of an actual event, call it from frame anyway
 	if app.event_invoked == false {
