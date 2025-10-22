@@ -33,22 +33,18 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
         tea.KeyMsg {
             match msg.code {
                 .q { return MainModel{}, tea.quit }
-                .tab { 
+                .tab {
                     m.state = if m.state == .timer { .spinner } else { .timer }
-                    return m.clone(), none
                 }
-                else {
-                    match m.state {
-                        .spinner {
-                            s, cmd := m.spinner.update(msg)
-                            if s is spinner.Model { m.spinner = s }
-                            return m.clone(), cmd
-                        }
-                        else {
-                            return m.clone(), none
-                        }
-                    }
+                else {}
+            }
+            match m.state {
+                .spinner {
+                    s, cmd := m.spinner.update(msg)
+                    if s is spinner.Model { m.spinner = s }
+                    return m.clone(), cmd
                 }
+                else {}
             }
         }
         spinner.TickMsg {
