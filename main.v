@@ -69,15 +69,13 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 const bordered_layout := tea.new_layout()
     .size(17, 7)
     .center()
-    .border(.rounded)
+    .border(.normal)
     .border_color(tea.Color.ansi(69))
     .padding_all(1)
 
 const borderless_layout = bordered_layout.border(.none)
 
 fn (m MainModel) view(mut ctx tea.Context) {
-	win_height := ctx.window_height()
-
 	mut layout := if m.state == .spinner { bordered_layout } else { borderless_layout }
 
 	layout.render(mut ctx, fn [m] (mut ctx tea.Context) {
@@ -95,9 +93,9 @@ fn (m MainModel) view(mut ctx tea.Context) {
 	ctx.pop_offset()
 
 	ctx.set_color(tea.Color.ansi(241))
-	mut help_text_y := win_height - 1
-	help_text_y = 10
-	ctx.draw_text(1, help_text_y, 'tab: focus next • n: new <name> • q: exit')
+	ctx.push_offset(tea.Offset{ y: 7 })
+	ctx.draw_text(1, 0, 'tab: focus next • n: new <name> • q: exit')
+	ctx.pop_offset()
 
 	ctx.reset_color()
 }
