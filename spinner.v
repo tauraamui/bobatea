@@ -35,15 +35,11 @@ pub fn (mut m Model) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
             if m.frame >= m.spinner.frames.len {
                 m.frame = 0
             }
-
-            return m.clone(), m.tick
         }
-        else {
-            return m.clone(), none
-        }
+        else {}
     }
 
-    return m.clone(), none
+    return m.clone(), m.tick
 }
 
 pub fn (m Model) view(mut ctx tea.Context) {

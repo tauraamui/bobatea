@@ -105,12 +105,16 @@ fn (mut app App) handle_event(msg Msg) {
 //                               we invoke the update loop of initial model here if an actual event
 //                               didn't fire, so that the initial model can still update logic per iter
 fn frame(mut app App) {
-	defer { app.event_invoked = false }
+	defer {
+	    app.event_invoked = false
+	}
 	// NOTE(tauraamui) [21/10/2025]: basically, if the stdlib event loop hasn't invoked update
 	//                               due to a lack of an actual event, call it from frame anyway
 	if app.event_invoked == false {
 	    msg := app.next_msg or { Msg(NoopMsg{}) }
-	    // defer { app.next_msg = none } // FIX(tauraamui) [21/10/2025]: properly handle caching messages, potentially use a queue
+	    if app.next_msg != none {
+	        app.next_msg = none
+	    }
 		app.handle_event(msg)
 	}
 	app.ui.clear()
