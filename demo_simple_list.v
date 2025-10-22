@@ -80,9 +80,9 @@ fn (m SimpleListModel) view(mut ctx tea.Context) {
         ctx.reset_color()
     }
 
-    ctx.push_offset(tea.Offset{ y: 3 })
+    ctx.push_offset(tea.Offset{ y: 1 })
     ctx.set_color(tea.Color.ansi(241))
-    ctx.draw_text(2, 0, "↑/k up • q: exit")
+    ctx.draw_text(2, 0, "↑/k up • ↓/j down • q: exit")
     ctx.reset_color()
 }
 
