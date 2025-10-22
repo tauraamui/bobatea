@@ -2,7 +2,6 @@ module main
 
 import bobatea as tea
 import spinner
-import strings
 
 enum SessionState as u8 {
 	timer
@@ -67,43 +66,31 @@ fn (mut m MainModel) update(msg tea.Msg) (tea.Model, ?tea.Cmd) {
 	return m.clone(), tea.batch_array(cmds)
 }
 
-const bordered_layout = tea.new_layout()
-	.size(17, 7)
-	.center()
-	.border(.rounded)
-	.border_color(tea.Color.ansi(69))
-	.padding_all(1)
+const bordered_layout := tea.new_layout()
+    .size(17, 7)
+    .center()
+    .border(.rounded)
+    .border_color(tea.Color.ansi(69))
+    .padding_all(1)
 
 const borderless_layout = bordered_layout.border(.none)
 
 fn (m MainModel) view(mut ctx tea.Context) {
 	win_height := ctx.window_height()
+
 	mut layout := if m.state == .spinner { bordered_layout } else { borderless_layout }
+
 	layout.render(mut ctx, fn [m] (mut ctx tea.Context) {
-		match m.state {
-			.spinner {
-				m.spinner.view(mut ctx)
-			}
-			.timer {
-				ctx.push_offset(tea.Offset{ x: -1 })
-				ctx.draw_text(0, 0, shark_g)
-				ctx.pop_offset()
-			}
-		}
+	    m.spinner.view(mut ctx)
 	})
-	ctx.push_offset(tea.Offset{ x: 18 })
+
+	ctx.push_offset(tea.Offset{ x: 17 })
 	layout = if m.state == .spinner { borderless_layout } else { bordered_layout }
+
 	layout.render(mut ctx, fn [m] (mut ctx tea.Context) {
-		match m.state {
-			.spinner {
-				m.spinner.view(mut ctx)
-			}
-			.timer {
-				ctx.push_offset(tea.Offset{ x: -1 })
-				ctx.draw_text(0, 0, shark_g)
-				ctx.pop_offset()
-			}
-		}
+        ctx.push_offset(tea.Offset{ x: -1 })
+        ctx.draw_text(0, 0, shark_g)
+        ctx.pop_offset()
 	})
 	ctx.pop_offset()
 
