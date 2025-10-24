@@ -1,4 +1,4 @@
-module main
+module demo
 
 import bobatea as tea
 import lib.utf8
