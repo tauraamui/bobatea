@@ -243,7 +243,7 @@ fn (mut ctx Context) window_height() int {
 }
 
 fn (mut ctx Context) push_offset(o Offset) {
-	ctx.offsets.prepend(o)
+	ctx.offsets << o
 }
 
 fn (ctx Context) compact_offsets() Offset {
