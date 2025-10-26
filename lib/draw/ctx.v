@@ -57,16 +57,12 @@ pub interface Renderer {
 
 pub interface Contextable {
 	Renderer
+	Offsetter
 mut:
 	render_debug() bool
 	rate_limit_draws() bool
 	window_width() int
 	window_height() int
-
-	push_offset(o Offset)
-	compact_offsets() Offset
-	pop_offset() ?Offset
-	clear_offset()
 
 	set_cursor_position(x int, y int)
 	set_cursor_to_block()

@@ -115,6 +115,8 @@ pub fn batch_array(cmds []Cmd) Cmd {
 
 // batch_optional creates a batch command from an array of optional commands,
 // filtering out none values
+// @deprecated
+/*
 pub fn batch_optional(cmds []?Cmd) Cmd {
 	mut valid_cmds := []Cmd{}
 	for cmd in cmds {
@@ -136,6 +138,7 @@ pub fn batch_optional(cmds []?Cmd) Cmd {
 		}
 	}
 }
+*/
 
 struct NoopMsg {}
 

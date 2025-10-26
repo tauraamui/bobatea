@@ -1,5 +1,13 @@
 module draw
 
+pub interface Offsetter {
+	compact_offsets() Offset
+mut:
+	push_offset(o Offset)
+	pop_offset() ?Offset
+	clear_offsets()
+}
+
 pub struct Offset {
 	x int
 	y int

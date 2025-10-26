@@ -63,7 +63,7 @@ fn (mut ctx ImmediateContext) push_offset(o Offset) {
 	ctx.offsets.prepend(o)
 }
 
-fn (mut ctx ImmediateContext) compact_offsets() Offset {
+fn (ctx ImmediateContext) compact_offsets() Offset {
     return arrays.sum(ctx.offsets) or { Offset{} }
 }
 
@@ -74,7 +74,7 @@ fn (mut ctx ImmediateContext) pop_offset() ?Offset {
 	return ctx.offsets.pop()
 }
 
-fn (mut ctx ImmediateContext) clear_offset() {
+fn (mut ctx ImmediateContext) clear_offsets() {
 	ctx.offsets.clear()
 }
 
