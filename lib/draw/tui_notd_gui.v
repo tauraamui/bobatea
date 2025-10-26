@@ -19,6 +19,7 @@ module draw
 
 import term.ui as tui
 import strings
+import arrays
 
 struct Pos {
 mut:
@@ -156,11 +157,6 @@ enum CursorStyle as u8 {
 	vertical_bar
 }
 
-pub struct Offset {
-	x int
-	y int
-}
-
 struct Context {
 	render_debug     bool
 	default_bg_color ?tui.Color
@@ -250,11 +246,15 @@ fn (mut ctx Context) push_offset(o Offset) {
 	ctx.offsets.prepend(o)
 }
 
-fn (mut ctx Context) pop_offset() {
+fn (mut ctx Context) compact_offsets() Offset {
+    return arrays.sum(ctx.offsets) or { Offset{} }
+}
+
+fn (mut ctx Context) pop_offset() ?Offset {
 	if ctx.offsets.len == 0 {
-		return
+		return none
 	}
-	ctx.offsets.delete_last() // just remove, don't actually care about value
+	return ctx.offsets.pop()
 }
 
 fn (mut ctx Context) clear_offset() {

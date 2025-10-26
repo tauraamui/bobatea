@@ -14,6 +14,7 @@
 
 module draw
 
+import arrays
 import term.ui as tui
 
 struct ImmediateContext {
@@ -62,11 +63,15 @@ fn (mut ctx ImmediateContext) push_offset(o Offset) {
 	ctx.offsets.prepend(o)
 }
 
-fn (mut ctx ImmediateContext) pop_offset() {
+fn (mut ctx ImmediateContext) compact_offsets() Offset {
+    return arrays.sum(ctx.offsets) or { Offset{} }
+}
+
+fn (mut ctx ImmediateContext) pop_offset() ?Offset {
 	if ctx.offsets.len == 0 {
-		return
+		return none
 	}
-	ctx.offsets.delete_last() // just remove, don't actually care about value
+	return ctx.offsets.pop()
 }
 
 fn (mut ctx ImmediateContext) clear_offset() {

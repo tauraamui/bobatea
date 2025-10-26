@@ -64,7 +64,8 @@ mut:
 	window_height() int
 
 	push_offset(o Offset)
-	pop_offset()
+	compact_offsets() Offset
+	pop_offset() ?Offset
 	clear_offset()
 
 	set_cursor_position(x int, y int)
