@@ -282,9 +282,17 @@ fn (mut ctx Context) pop_offset() ?Offset {
 	return ctx.offsets.pop()
 }
 
+fn (mut ctx Context) clear_offsets_to(id int) {
+	ctx.clear_to_offset(id)
+}
+
 fn (mut ctx Context) clear_to_offset(id int) {
 	index := ctx.map_id_to_index(id) or { return }
     ctx.offsets.drop(index)
+}
+
+fn (mut ctx Context) clear_offsets_from(id int) {
+	ctx.clear_from_offset(id)
 }
 
 fn (mut ctx Context) clear_from_offset(id int) {

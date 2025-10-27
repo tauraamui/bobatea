@@ -9,7 +9,9 @@ pub interface Offsetter {
 mut:
 	push_offset(o Offset) int
 	pop_offset() ?Offset
+	clear_offsets_to(id int)
 	clear_to_offset(id int)
+	clear_offsets_from(id int)
 	clear_from_offset(id int)
 	clear_all_offsets()
 }

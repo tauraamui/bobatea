@@ -99,8 +99,12 @@ fn (mut ctx ImmediateContext) pop_offset() ?Offset {
 	return ctx.offsets.pop()
 }
 
+fn (mut ctx ImmediateContext) clear_offsets_to(id int) {}
+
 fn (mut ctx ImmediateContext) clear_to_offset(id int) {
 }
+
+fn (mut ctx ImmediateContext) clear_offsets_from(id int) {}
 
 fn (mut ctx ImmediateContext) clear_from_offset(id int) {
 }
