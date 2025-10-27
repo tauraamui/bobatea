@@ -192,12 +192,7 @@ fn event(e draw.Event, mut app App) {
 	defer { app.event_invoked = true }
 	msg := match e.typ {
 		.key_down {
-			Msg(KeyMsg{
-				code: e.code
-				modifiers: e.modifiers
-				utf8: e.utf8
-				ascii: e.ascii
-			})
+			Msg(resolve_key_msg(e))
 		}
 		.mouse_scroll {
 			Msg(NoopMsg{})
@@ -210,6 +205,15 @@ fn event(e draw.Event, mut app App) {
 		}
 	}
 	app.handle_event(msg)
+}
+
+fn resolve_key_msg(e draw.Event) KeyMsg {
+	return KeyMsg{
+		code: e.code
+		modifiers: e.modifiers
+		utf8: e.utf8
+		ascii: e.ascii
+	}
 }
 
 fn (mut app App) handle_event(msg Msg) {
