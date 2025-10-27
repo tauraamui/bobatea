@@ -173,6 +173,7 @@ mut:
 	fg_color       ?Color
 	bg_color       ?Color
 	offsets        []Offset
+	id_counter     int
 }
 
 interface NativeContext {
@@ -242,9 +243,22 @@ fn (mut ctx Context) window_height() int {
 	return ctx.ref.window_height
 }
 
+fn (mut ctx Context) next_id() int {
+	ctx.id_counter += 1
+	// constant is from Knuth's multiplicative hash
+	return (ctx.id_counter * 2654435761) % 1000000
+}
+
+fn (ctx Context) map_id_to_index(id int) ?int {
+	index := arrays.index_of_first(ctx.offsets, fn [id] (idx int, o Offset) bool { return o.id == id })
+	if index == -1 { return none }
+	return index
+}
+
 fn (mut ctx Context) push_offset(o Offset) int {
-	ctx.offsets << o
-	return ctx.offsets.len - 1
+	id := ctx.next_id()
+	ctx.offsets << Offset{ id: id, x: o.x, y: o.y }
+	return id
 }
 
 fn (ctx Context) compact_offsets() Offset {
@@ -259,10 +273,12 @@ fn (mut ctx Context) pop_offset() ?Offset {
 }
 
 fn (mut ctx Context) clear_to_offset(id int) {
-    ctx.offsets.drop(id)
+	index := ctx.map_id_to_index(id) or { return }
+    ctx.offsets.drop(index)
 }
 
 fn (mut ctx Context) clear_from_offset(id int) {
+	index := ctx.map_id_to_index(id) or { return }
     ctx.offsets.trim(id)
 }
 

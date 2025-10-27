@@ -22,6 +22,7 @@ struct ImmediateContext {
 mut:
 	ref     &tui.Context
 	offsets []Offset
+	id_counter int
 }
 
 type Runner = fn () !
@@ -59,9 +60,16 @@ fn (mut ctx ImmediateContext) window_height() int {
 	return ctx.ref.window_height
 }
 
+fn (mut ctx ImmediateContext) next_id() int {
+	ctx.id_counter += 1
+	// constant is from Knuth's multiplicative hash
+	return (ctx.id_counter * 2654435761) % 1000000
+}
+
 fn (mut ctx ImmediateContext) push_offset(o Offset) int {
-	ctx.offsets << o
-	return ctx.offsets.len - 1
+	id := ctx.next_id()
+	ctx.offsets << Offset{ id: id, x: o.x, y: o.y }
+	return id
 }
 
 fn (ctx ImmediateContext) compact_offsets() Offset {
