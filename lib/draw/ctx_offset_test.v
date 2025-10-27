@@ -101,3 +101,41 @@ fn test_context_offset_clear_from_offset() {
 	assert yy == 3
 }
 
+fn test_context_offset_clear_to_offset() {
+	mut t_ctx := Context{
+		ref: unsafe { nil }
+	}
+	t_ctx.setup_grid()!
+
+	t_ctx.push_offset(Offset{ x: 1, y: 1 })
+	t_ctx.push_offset(Offset{ x: 2, y: 2 })
+	t_ctx.push_offset(Offset{ x: 5, y: 5 })
+	bookmark_id := t_ctx.push_offset(Offset{ x: 8, y: 8 })
+	assert t_ctx.map_id_to_index(bookmark_id)? == 3 // ensure correct index resolved from id lookup
+	t_ctx.push_offset(Offset{ x: 11, y: 11 })
+
+	// NOTE(tauraamui): pre-clearing offsets from given id, they all exist and apply
+	mut xx, mut yy := apply_offsets(t_ctx.offsets, 0, 0)
+	assert xx == 27
+	assert yy == 27
+
+	t_ctx.clear_to_offset(bookmark_id)
+
+	xx, yy = apply_offsets(t_ctx.offsets, 0, 0)
+	assert xx == 19
+	assert yy == 19
+}
+
+fn test_context_offset_compact() {
+	mut t_ctx := Context{
+		ref: unsafe { nil }
+	}
+	t_ctx.setup_grid()!
+
+	t_ctx.push_offset(Offset{ x: 1, y: 1 })
+	t_ctx.push_offset(Offset{ x: 2, y: 2 })
+	t_ctx.push_offset(Offset{ x: 5, y: 5 })
+
+	assert t_ctx.compact_offsets() == Offset{ x: 8, y: 8 }
+}
+
