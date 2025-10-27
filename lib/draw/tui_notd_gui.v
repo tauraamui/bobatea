@@ -279,7 +279,7 @@ fn (mut ctx Context) clear_to_offset(id int) {
 
 fn (mut ctx Context) clear_from_offset(id int) {
 	index := ctx.map_id_to_index(id) or { return }
-    ctx.offsets.trim(id)
+	ctx.offsets = ctx.offsets[..index]
 }
 
 fn (mut ctx Context) clear_all_offsets() {
