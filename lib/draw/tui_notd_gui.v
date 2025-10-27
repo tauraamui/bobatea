@@ -265,6 +265,16 @@ fn (ctx Context) compact_offsets() Offset {
     return ctx.offsets.compact()
 }
 
+fn (ctx Context) compact_offsets_to(id int) Offset {
+	index := ctx.map_id_to_index(id) or { return Offset{} }
+	return ctx.offsets[..index].compact()
+}
+
+fn (ctx Context) compact_offsets_from(id int) Offset {
+	index := ctx.map_id_to_index(id) or { return Offset{} }
+	return ctx.offsets[index..].compact()
+}
+
 fn (mut ctx Context) pop_offset() ?Offset {
 	if ctx.offsets.len == 0 {
 		return none

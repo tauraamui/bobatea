@@ -139,3 +139,21 @@ fn test_context_offset_compact() {
 	assert t_ctx.compact_offsets() == Offset{ x: 8, y: 8 }
 }
 
+fn test_context_offset_compact_from() {
+	mut t_ctx := Context{
+		ref: unsafe { nil }
+	}
+	t_ctx.setup_grid()!
+
+	t_ctx.push_offset(Offset{ x: 1, y: 1 })
+	t_ctx.push_offset(Offset{ x: 2, y: 2 })
+	bookmark_id := t_ctx.push_offset(Offset{ x: 5, y: 5 })
+	t_ctx.push_offset(Offset{ x: 8, y: 8 })
+	t_ctx.push_offset(Offset{ x: 12, y: 12 })
+
+	assert t_ctx.compact_offsets_to(bookmark_id) == Offset{ x: 3, y: 3 }
+	assert t_ctx.compact_offsets_from(bookmark_id) == Offset{ x: 25, y: 25 }
+	assert t_ctx.compact_offsets() == Offset{ x: 28, y: 28 }
+
+}
+

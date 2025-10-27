@@ -21,7 +21,7 @@ struct ImmediateContext {
 	render_debug bool
 mut:
 	ref     &tui.Context
-	offsets []Offset
+	offsets Offsets
 	id_counter int
 }
 
@@ -66,10 +66,26 @@ fn (mut ctx ImmediateContext) next_id() int {
 	return (ctx.id_counter * 2654435761) % 1000000
 }
 
+fn (ctx ImmediateContext) map_id_to_index(id int) ?int {
+	index := arrays.index_of_first(ctx.offsets, fn [id] (idx int, o Offset) bool { return o.id == id })
+	if index == -1 { return none }
+	return index
+}
+
 fn (mut ctx ImmediateContext) push_offset(o Offset) int {
 	id := ctx.next_id()
 	ctx.offsets << Offset{ id: id, x: o.x, y: o.y }
 	return id
+}
+
+fn (ctx ImmediateContext) compact_offsets_to(id int) Offset {
+	index := ctx.map_id_to_index(id) or { return Offset{} }
+	return ctx.offsets[..index].compact()
+}
+
+fn (ctx ImmediateContext) compact_offsets_from(id int) Offset {
+	index := ctx.map_id_to_index(id) or { return Offset{} }
+	return ctx.offsets[index..].compact()
 }
 
 fn (ctx ImmediateContext) compact_offsets() Offset {

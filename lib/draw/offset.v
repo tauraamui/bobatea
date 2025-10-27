@@ -4,6 +4,8 @@ import arrays
 
 pub interface Offsetter {
 	compact_offsets() Offset
+	compact_offsets_to(id int) Offset
+	compact_offsets_from(id int) Offset
 mut:
 	push_offset(o Offset) int
 	pop_offset() ?Offset
