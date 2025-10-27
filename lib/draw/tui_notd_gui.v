@@ -172,7 +172,7 @@ mut:
 	bold           bool
 	fg_color       ?Color
 	bg_color       ?Color
-	offsets        []Offset
+	offsets        Offsets
 	id_counter     int
 }
 
@@ -262,7 +262,7 @@ fn (mut ctx Context) push_offset(o Offset) int {
 }
 
 fn (ctx Context) compact_offsets() Offset {
-    return arrays.sum(ctx.offsets) or { Offset{} }
+    return ctx.offsets.compact()
 }
 
 fn (mut ctx Context) pop_offset() ?Offset {

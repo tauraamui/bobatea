@@ -1,5 +1,7 @@
 module draw
 
+import arrays
+
 pub interface Offsetter {
 	compact_offsets() Offset
 mut:
@@ -8,6 +10,12 @@ mut:
 	clear_to_offset(id int)
 	clear_from_offset(id int)
 	clear_all_offsets()
+}
+
+type Offsets = []Offset
+
+pub fn (l_o Offsets) compact() Offset {
+	return arrays.sum(l_o) or { Offset{} }
 }
 
 pub struct Offset {
