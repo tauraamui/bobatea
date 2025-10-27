@@ -31,7 +31,8 @@ pub interface Msg {}
 
 pub struct KeyMsg {
 pub:
-	code tui.KeyCode
+	code      tui.KeyCode
+	modifiers tui.Modifiers
 }
 
 pub struct QuitMsg {}
@@ -191,6 +192,7 @@ fn event(e draw.Event, mut app App) {
 		.key_down {
 			Msg(KeyMsg{
 				code: e.code
+				modifiers: e.modifiers
 			})
 		}
 		.mouse_scroll {
