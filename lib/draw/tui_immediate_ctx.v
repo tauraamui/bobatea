@@ -59,8 +59,9 @@ fn (mut ctx ImmediateContext) window_height() int {
 	return ctx.ref.window_height
 }
 
-fn (mut ctx ImmediateContext) push_offset(o Offset) {
-	ctx.offsets.prepend(o)
+fn (mut ctx ImmediateContext) push_offset(o Offset) int {
+	ctx.offsets << o
+	return ctx.offsets.len - 1
 }
 
 fn (ctx ImmediateContext) compact_offsets() Offset {
@@ -74,7 +75,13 @@ fn (mut ctx ImmediateContext) pop_offset() ?Offset {
 	return ctx.offsets.pop()
 }
 
-fn (mut ctx ImmediateContext) clear_offsets() {
+fn (mut ctx ImmediateContext) clear_to_offset(id int) {
+}
+
+fn (mut ctx ImmediateContext) clear_from_offset(id int) {
+}
+
+fn (mut ctx ImmediateContext) clear_all_offsets() {
 	ctx.offsets.clear()
 }
 

@@ -3,9 +3,11 @@ module draw
 pub interface Offsetter {
 	compact_offsets() Offset
 mut:
-	push_offset(o Offset)
+	push_offset(o Offset) int
 	pop_offset() ?Offset
-	clear_offsets()
+	clear_to_offset(id int)
+	clear_from_offset(id int)
+	clear_all_offsets()
 }
 
 pub struct Offset {
