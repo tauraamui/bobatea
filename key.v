@@ -27,15 +27,15 @@ fn resolve_key_msg(e draw.Event) KeyMsg {
 	// is `code`.
 	prefix := if e.modifiers.has(.ctrl) { "ctrl+" } else { "" }
 	key_code := e.code
-	if e.code.str() != "unknown enum value" {
-		v := match e.code {
-			.null { e.utf8 }
-			else  { e.code.str() }
-		}
-		return KeyMsg{
-			runes: "${prefix}${v}".runes()
+	v := match e.code {
+		.null { e.utf8 }
+		else  {
+			code_str := e.code.str()
+			if code_str == "unknown enum value" { e.utf8 } else { code_str }
 		}
 	}
-	return KeyMsg{}
+	return KeyMsg{
+		runes: "${prefix}${v}".runes()
+	}
 }
 
