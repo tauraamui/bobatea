@@ -15,7 +15,7 @@ pub:
 	ascii     u8
 }
 
-fn (k KeyMsg) str() string {
+pub fn (k KeyMsg) str() string {
 	mut sb := strings.new_builder(k.runes.len)
 	if k.modifiers.has(.alt) { sb.write_string("alt+") }
 	sb.write_runes(k.runes)
