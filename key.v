@@ -2,7 +2,6 @@ module bobatea
 
 import term.ui as tui
 import lib.draw
-import strings
 
 pub struct KeyMsg {
 pub:
