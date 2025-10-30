@@ -26,7 +26,6 @@ fn resolve_key_msg(e draw.Event) KeyMsg {
 	// if modifiers is either ctrl or shift then the only character rep field we want to pay attention to
 	// is `code`.
 	prefix := if e.modifiers.has(.ctrl) { "ctrl+" } else { "" }
-	key_code := e.code
 	v := match e.code {
 		.null { e.utf8 }
 		else  {
