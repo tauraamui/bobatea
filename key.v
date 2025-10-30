@@ -52,7 +52,7 @@ fn resolve_key_msg(e draw.Event) KeyMsg {
 	return KeyMsg{
 		alt:   e.modifiers.has(.alt)
 		runes: "${prefix}${code_to_str(e.code, e.utf8, is_special)}".runes()
-		type: if is_special { .special } else { .runes }
+		type: if is_special || !e.modifiers.is_empty() { .special } else { .runes }
 	}
 }
 
@@ -61,7 +61,7 @@ fn code_to_str(code tui.KeyCode, fallback string, is_special bool) string {
 		.null { fallback }
 		else  {
 			code_str := if is_special { code.str() } else { u8(code).ascii_str() }
-			if code_str == "unknown enum value" { fallback } else { code_str }
+			if code_str == "unknown enum value" || (int(code) > 96 && int(code) < 123) { fallback } else { code_str }
 		}
 	}
 }
