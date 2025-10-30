@@ -15,7 +15,7 @@ pub:
 	ascii     u8
 }
 
-pub fn (k KeyMsg) str() string {
+pub fn (k KeyMsg) string() string {
 	prefix := if k.modifiers.has(.alt) { "alt+" } else { "" }
 	return "${prefix}${k.runes.string()}"
 }
