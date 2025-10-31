@@ -178,6 +178,12 @@ fn (mut app App) quit() ! {
 	exit(0)
 }
 
+pub struct ResizedMsg {
+pub:
+	window_width  int
+	window_height int
+}
+
 // NOTE(tauraamui) [22/10/2025]: this is invoked by the underlying runtime loop directly only
 //                               when an actual event comes in, (keypress/resize, etc.,)
 fn event(e draw.Event, mut app App) {
@@ -190,7 +196,10 @@ fn event(e draw.Event, mut app App) {
 			Msg(NoopMsg{})
 		}
 		.resized {
-			Msg(NoopMsg{})
+			Msg(ResizedMsg{
+				window_width: e.width
+				window_height: e.height
+			})
 		}
 		else {
 			Msg(NoopMsg{})
