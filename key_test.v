@@ -313,3 +313,38 @@ fn test_resolve_key_msg_to_string_with_ctrl_modifier() {
 	assert resolve_key_msg(draw.Event{ code: .f24, modifiers: .ctrl }).string() == 'ctrl+f24'
 }
 
+fn test_resolve_key_msg_from_c() {
+	e := single_char("c")
+	ctrl_and_c_msg := resolve_key_msg(draw.Event{
+		code: e.code
+		modifiers: e.modifiers
+		utf8: e.utf8
+		ascii: e.ascii
+	})
+	assert ctrl_and_c_msg == KeyMsg{
+		runes: [`c`]
+		k_type: .runes
+	}
+}
+
+
+fn test_resolve_key_msg_from_ctrl_and_c() {
+	e := single_char(u8(3).ascii_str())
+	ctrl_and_c_msg := resolve_key_msg(draw.Event{
+		code: e.code
+		modifiers: e.modifiers
+		utf8: e.utf8
+		ascii: e.ascii
+	})
+	assert ctrl_and_c_msg == KeyMsg{
+		runes: [`c`, `t`, `r`, `l`, `+`, `c`]
+		k_type: .special
+	}
+}
+
+fn test_single_char_ctrl_and_c() {
+	e := single_char(u8(3).ascii_str())
+	assert e.modifiers == .ctrl
+	assert e.code == .c
+}
+

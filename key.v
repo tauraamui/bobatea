@@ -49,6 +49,7 @@ fn resolve_key_msg(e draw.Event) KeyMsg {
 	// is `code`.
 	prefix := if e.modifiers.has(.ctrl) { "ctrl+" } else { "" }
 	is_special := special_keycodes.contains(e.code)
+
 	return KeyMsg{
 		alt:   e.modifiers.has(.alt)
 		runes: "${prefix}${code_to_str(e.code, e.utf8, is_special)}".runes()
@@ -64,5 +65,49 @@ fn code_to_str(code tui.KeyCode, fallback string, is_special bool) string {
 			if code_str == "unknown enum value" || (int(code) > 96 && int(code) < 123) { fallback } else { code_str }
 		}
 	}
+}
+
+/*
+WARNING - just here to verify stdlib behaviour for testing, do not use directly, ever!!
+*/
+fn single_char(buf string) &tui.Event {
+	ch := buf[0]
+
+	mut event := &tui.Event{
+		typ:   .key_down
+		ascii: ch
+		code:  unsafe { tui.KeyCode(ch) }
+		utf8:  ch.ascii_str()
+	}
+
+	match ch {
+		// special handling for `ctrl + letter`
+		// TODO: Fix assoc in V and remove this workaround :/
+		// 1  ... 26 { event = Event{ ...event, code: KeyCode(96 | ch), modifiers: .ctrl  } }
+		// 65 ... 90 { event = Event{ ...event, code: KeyCode(32 | ch), modifiers: .shift } }
+		// The bit `or`s here are really just `+`'s, just written in this way for a tiny performance improvement
+		// don't treat tab, enter as ctrl+i, ctrl+j
+		1...8, 11...26 {
+			event = &tui.Event{
+				typ:       event.typ
+				ascii:     event.ascii
+				utf8:      event.utf8
+				code:      unsafe { tui.KeyCode(96 | ch) }
+				modifiers: .ctrl
+			}
+		}
+		65...90 {
+			event = &tui.Event{
+				typ:       event.typ
+				ascii:     event.ascii
+				utf8:      event.utf8
+				code:      unsafe { tui.KeyCode(32 | ch) }
+				modifiers: .shift
+			}
+		}
+		else {}
+	}
+
+	return event
 }
 
