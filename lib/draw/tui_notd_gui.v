@@ -344,14 +344,15 @@ fn rune_visual_width(r rune) int {
 fn (mut ctx Context) write(c string) {
 	cursor_pos := ctx.cursor_pos
 	mut x_offset := 0
-	x := cursor_pos.x + x_offset
-	y := cursor_pos.y
 
 	for c_char in c.runes() {
 		width := rune_visual_width(c_char)
+		x := cursor_pos.x + x_offset
+		y := cursor_pos.y
 
 		if clip_area := ctx.clip_area {
 			if !clip_area.in_bounds(x, y) {
+				x_offset += width
 				continue
 			}
 		}
