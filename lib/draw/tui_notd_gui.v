@@ -177,7 +177,7 @@ mut:
 	id_counter     int
 }
 
-struct ClipArea {
+pub struct ClipArea {
 	min_x int
 	min_y int
 	max_x int
