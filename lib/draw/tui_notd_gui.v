@@ -184,6 +184,12 @@ pub struct ClipArea {
 	max_y int
 }
 
+fn (c ClipArea) apply_offsets(offsets Offsets) ClipArea {
+	min_xx, min_yy := apply_offsets(offsets, c.min_x, c.min_y)
+	max_xx, max_yy := apply_offsets(offsets, c.max_x, c.max_y)
+	return ClipArea{ min_xx, min_yy, max_xx, max_yy }
+}
+
 fn (c ClipArea) in_bounds(x int, y int) bool {
 	if x < c.min_x { return false }
 	if y < c.min_y { return false }
@@ -351,7 +357,7 @@ fn (mut ctx Context) write(c string) {
 		y := cursor_pos.y
 
 		if clip_area := ctx.clip_area {
-			if !clip_area.in_bounds(x, y) {
+			if !clip_area.apply_offsets(ctx.offsets).in_bounds(x, y) {
 				x_offset += width
 				continue
 			}
