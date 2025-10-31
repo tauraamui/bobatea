@@ -3,7 +3,7 @@ module bobatea
 import term.ui as tui
 import lib.draw
 
-enum KeyType as u8 {
+pub enum KeyType as u8 {
 	runes
 	special
 }
