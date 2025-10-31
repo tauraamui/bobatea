@@ -3,6 +3,10 @@ module bobatea
 import term.ui as tui
 import lib.draw
 
+pub fn visible_len(s string) int {
+	return utf8_str_visible_length(s)
+}
+
 pub enum KeyType as u8 {
 	runes
 	special
