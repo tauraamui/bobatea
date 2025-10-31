@@ -20,9 +20,15 @@ fn test_resolve_key_msg_ctrl_and_symbol() {
 }
 
 fn test_resolve_key_msg_modifiers_make_key_special() {
-	assert resolve_key_msg(draw.Event{ utf8: "z" }).type == .runes
-	assert resolve_key_msg(draw.Event{ modifiers: .ctrl, utf8: "z" }).type == .special
-	assert resolve_key_msg(draw.Event{ code: .z, modifiers: .shift, utf8: "Z" }).type == .runes
+	assert resolve_key_msg(draw.Event{ utf8: "z" }).k_type == .runes
+	assert resolve_key_msg(draw.Event{ modifiers: .ctrl, utf8: "z" }).k_type == .special
+	assert resolve_key_msg(draw.Event{ code: .z, modifiers: .shift, utf8: "Z" }).k_type == .runes
+
+	assert resolve_key_msg(draw.Event{ code: .c, modifiers: .ctrl, utf8: "c" }) == KeyMsg{
+		runes: [`c`, `t`, `r`, `l`, `+`, `c`]
+		k_type: .special
+	}
+	assert resolve_key_msg(draw.Event{ code: .c, modifiers: .ctrl, utf8: "c" }).string() == "ctrl+c"
 }
 
 fn test_resolve_key_msg_to_string_no_modifiers() {

@@ -12,7 +12,7 @@ pub struct KeyMsg {
 pub:
 	alt    bool
 	runes  []rune
-	type KeyType
+	k_type KeyType
 }
 
 pub fn (k KeyMsg) string() string {
@@ -52,7 +52,7 @@ fn resolve_key_msg(e draw.Event) KeyMsg {
 	return KeyMsg{
 		alt:   e.modifiers.has(.alt)
 		runes: "${prefix}${code_to_str(e.code, e.utf8, is_special)}".runes()
-		type: if is_special || e.modifiers.has(.alt | .ctrl) { .special } else { .runes }
+		k_type: if is_special || e.modifiers.has(.alt | .ctrl) { .special } else { .runes }
 	}
 }
 
