@@ -64,6 +64,9 @@ mut:
 	window_width() int
 	window_height() int
 
+	set_clip_area(c ClipArea)
+	clear_clip_area()
+
 	set_cursor_position(x int, y int)
 	set_cursor_to_block()
 	set_cursor_to_underline()

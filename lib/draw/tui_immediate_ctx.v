@@ -121,6 +121,10 @@ fn (mut ctx ImmediateContext) clear_all_offsets() {
 	ctx.offsets.clear()
 }
 
+fn (mut ctx ImmediateContext) set_clip_area(c ClipArea) {}
+
+fn (mut ctx ImmediateContext) clear_clip_area() {}
+
 fn (mut ctx ImmediateContext) set_cursor_position(x int, y int) {
 	ctx.ref.set_cursor_position(x, y)
 }

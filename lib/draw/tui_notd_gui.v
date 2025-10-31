@@ -163,6 +163,7 @@ struct Context {
 mut:
 	ref            NativeContext
 	data           Grid
+	clip_area      ?ClipArea
 	prev_data      ?Grid
 	cursor_pos     Pos
 	cursor_pos_set bool
@@ -174,6 +175,21 @@ mut:
 	bg_color       ?Color
 	offsets        Offsets
 	id_counter     int
+}
+
+struct ClipArea {
+	min_x int
+	min_y int
+	max_x int
+	max_y int
+}
+
+fn (c ClipArea) in_bounds(x int, y int) bool {
+	if x < c.min_x { return false }
+	if y < c.min_y { return false }
+	if x > c.max_x { return false }
+	if y > c.max_y { return false }
+	return true
 }
 
 interface NativeContext {
@@ -312,6 +328,14 @@ fn (mut ctx Context) clear_all_offsets() {
 	ctx.offsets.clear()
 }
 
+fn (mut ctx Context) set_clip_area(c ClipArea) {
+	ctx.clip_area = c
+}
+
+fn (mut ctx Context) clear_clip_area() {
+	ctx.clip_area = none
+}
+
 fn rune_visual_width(r rune) int {
 	return utf8_str_visible_length(r.str())
 }
@@ -319,12 +343,20 @@ fn rune_visual_width(r rune) int {
 fn (mut ctx Context) write(c string) {
 	cursor_pos := ctx.cursor_pos
 	mut x_offset := 0
+	x := cursor_pos.x + x_offset
+	y := cursor_pos.y
 
 	for c_char in c.runes() {
 		width := rune_visual_width(c_char)
 
+		if clip_area := ctx.clip_area {
+			if !clip_area.in_bounds(x, y) {
+				continue
+			}
+		}
+
 		// Set the main cell with the character
-		ctx.data.set(cursor_pos.x + x_offset, cursor_pos.y, Cell{
+		ctx.data.set(x, y, Cell{
 			data:            c_char
 			visual_width:    width
 			is_continuation: false
