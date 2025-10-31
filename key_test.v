@@ -328,17 +328,35 @@ fn test_resolve_key_msg_from_c() {
 }
 
 fn test_resolve_key_msg_from_accent_e() {
-	accent_e, _ := multi_char([u8(0xc3), 0xa9].bytestr())
+	// Simulate what happens when a real TUI application receives UTF-8 input
+	// In practice, the TUI library would provide the complete UTF-8 string
+	original_utf8 := [u8(0xc3), 0xa9].bytestr()
+
+	// Create an event that represents what a proper TUI implementation would provide
 	accent_e_msg := resolve_key_msg(draw.Event{
-		code: accent_e.code
-		modifiers: accent_e.modifiers
-		utf8: accent_e.utf8
-		ascii: accent_e.ascii
+		utf8: original_utf8
 	})
 	assert [u8(0xc3), 0xa9].byterune()! == `é`
 	assert [u8(0xc3), 0xa9].bytestr() == 'é'
 	assert accent_e_msg == KeyMsg{
-		runes: [`e`]
+		runes:  [`é`]
+		k_type: .runes
+	}
+}
+
+fn test_resolve_key_msg_from_ae() {
+	// Simulate what happens when a real TUI application receives UTF-8 input
+	// In practice, the TUI library would provide the complete UTF-8 string
+	original_utf8 := [u8(0xc3), 0xa6].bytestr()
+
+	// Create an event that represents what a proper TUI implementation would provide
+	ae_msg := resolve_key_msg(draw.Event{
+		utf8: original_utf8
+	})
+	assert [u8(0xc3), 0xa6].byterune()! == `æ`
+	assert [u8(0xc3), 0xa6].bytestr() == 'æ'
+	assert ae_msg == KeyMsg{
+		runes:  [`æ`]
 		k_type: .runes
 	}
 }

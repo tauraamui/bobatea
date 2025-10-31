@@ -85,16 +85,21 @@ fn code_to_str(code tui.KeyCode, fallback string, is_special bool) string {
 			if is_special {
 				code.str()
 			} else {
-				code_str := u8(code).ascii_str()
-				// Use fallback if it's an unknown enum value
-				if code_str == 'unknown enum value' {
-					fallback
-				} else if fallback.len == 1 && fallback != code_str && fallback.bytes()[0] >= 32 {
-					// Use fallback for printable characters that differ from code_str (like 'A' vs 'a')
+				// For multi-byte UTF-8 characters, use the fallback (utf8 field)
+				if fallback.len > 1 || (fallback.len == 1 && fallback.bytes()[0] >= 0x80) {
 					fallback
 				} else {
-					// For control characters or when fallback matches code_str, use code_str
-					code_str
+					code_str := u8(code).ascii_str()
+					// Use fallback if it's an unknown enum value
+					if code_str == 'unknown enum value' {
+						fallback
+					} else if fallback.len == 1 && fallback != code_str && fallback.bytes()[0] >= 32 {
+						// Use fallback for printable characters that differ from code_str (like 'A' vs 'a')
+						fallback
+					} else {
+						// For control characters or when fallback matches code_str, use code_str
+						code_str
+					}
 				}
 			}
 		}
@@ -185,4 +190,3 @@ fn multi_char(buf string) (&tui.Event, int) {
 
 	return event, buf.len
 }
-
