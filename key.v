@@ -28,7 +28,6 @@ const special_keycodes = [
 	tui.KeyCode.tab,
 	.enter,
 	.escape,
-	.space,
 	.backspace,
 	.insert,
 	.delete,
@@ -87,7 +86,7 @@ fn code_to_str(code tui.KeyCode, fallback string, is_special bool) string {
 		}
 		else {
 			if is_special {
-				if code == .space { " " } else { code.str() }
+				code.str()
 			} else {
 				// For multi-byte UTF-8 characters, use the fallback (utf8 field)
 				if fallback.len > 1 || (fallback.len == 1 && fallback.bytes()[0] >= 0x80) {
