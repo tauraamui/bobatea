@@ -228,6 +228,7 @@ pub fn new_context(cfg Config) (&Contextable, Runner) {
 			use_alternate_buffer: cfg.use_alternate_buffer
 			frame_rate:           30
 		)
+		clip_area: none
 	}
 	ctx.setup_grid() or { panic('unable to init grid -> ${err}') }
 	return ctx, unsafe { ctx.run }
