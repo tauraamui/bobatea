@@ -19,6 +19,12 @@ fn test_resolve_key_msg_ctrl_and_symbol() {
 	}).string() == "ctrl+🦈"
 }
 
+fn test_resolve_key_msg_modifiers_make_key_special() {
+	assert resolve_key_msg(draw.Event{ utf8: "z" }).type == .runes
+	assert resolve_key_msg(draw.Event{ modifiers: .ctrl, utf8: "z" }).type == .special
+	assert resolve_key_msg(draw.Event{ code: .z, modifiers: .shift, utf8: "Z" }).type == .runes
+}
+
 fn test_resolve_key_msg_to_string_no_modifiers() {
 	assert resolve_key_msg(draw.Event{ utf8: "a" }).string() == "a"
 	assert resolve_key_msg(draw.Event{ utf8: "b" }).string() == "b"
