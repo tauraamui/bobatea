@@ -20,8 +20,8 @@ import term.ui as tui
 struct ImmediateContext {
 	render_debug bool
 mut:
-	ref     &tui.Context
-	offsets Offsets
+	ref        &tui.Context
+	offsets    Offsets
 	id_counter int
 }
 
@@ -67,14 +67,22 @@ fn (mut ctx ImmediateContext) next_id() int {
 }
 
 fn (ctx ImmediateContext) map_id_to_index(id int) ?int {
-	index := arrays.index_of_first(ctx.offsets, fn [id] (idx int, o Offset) bool { return o.id == id })
-	if index == -1 { return none }
+	index := arrays.index_of_first(ctx.offsets, fn [id] (idx int, o Offset) bool {
+		return o.id == id
+	})
+	if index == -1 {
+		return none
+	}
 	return index
 }
 
 fn (mut ctx ImmediateContext) push_offset(o Offset) int {
 	id := ctx.next_id()
-	ctx.offsets << Offset{ id: id, x: o.x, y: o.y }
+	ctx.offsets << Offset{
+		id: id
+		x:  o.x
+		y:  o.y
+	}
 	return id
 }
 
@@ -89,7 +97,7 @@ fn (ctx ImmediateContext) compact_offsets_from(id int) Offset {
 }
 
 fn (ctx ImmediateContext) compact_offsets() Offset {
-    return arrays.sum(ctx.offsets) or { Offset{} }
+	return arrays.sum(ctx.offsets) or { Offset{} }
 }
 
 fn (mut ctx ImmediateContext) pop_offset() ?Offset {

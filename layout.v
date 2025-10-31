@@ -80,7 +80,7 @@ pub fn (l Layout) render(mut ctx Context, content_fn fn (mut Context)) {
 	total_offset_x := border_offset + l.padding.left + alignment_offset_x
 	total_offset_y := border_offset + l.padding.top + alignment_offset_y
 
-	ctx.push_offset(Offset{x: total_offset_x, y: total_offset_y})
+	ctx.push_offset(Offset{ x: total_offset_x, y: total_offset_y })
 	content_fn(mut ctx)
 	ctx.pop_offset()
 

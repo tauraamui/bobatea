@@ -250,19 +250,27 @@ fn (mut ctx Context) next_id() int {
 }
 
 fn (ctx Context) map_id_to_index(id int) ?int {
-	index := arrays.index_of_first(ctx.offsets, fn [id] (idx int, o Offset) bool { return o.id == id })
-	if index == -1 { return none }
+	index := arrays.index_of_first(ctx.offsets, fn [id] (idx int, o Offset) bool {
+		return o.id == id
+	})
+	if index == -1 {
+		return none
+	}
 	return index
 }
 
 fn (mut ctx Context) push_offset(o Offset) int {
 	id := ctx.next_id()
-	ctx.offsets << Offset{ id: id, x: o.x, y: o.y }
+	ctx.offsets << Offset{
+		id: id
+		x:  o.x
+		y:  o.y
+	}
 	return id
 }
 
 fn (ctx Context) compact_offsets() Offset {
-    return ctx.offsets.compact()
+	return ctx.offsets.compact()
 }
 
 fn (ctx Context) compact_offsets_to(id int) Offset {
@@ -288,7 +296,7 @@ fn (mut ctx Context) clear_offsets_to(id int) {
 
 fn (mut ctx Context) clear_to_offset(id int) {
 	index := ctx.map_id_to_index(id) or { return }
-    ctx.offsets.drop(index)
+	ctx.offsets.drop(index)
 }
 
 fn (mut ctx Context) clear_offsets_from(id int) {

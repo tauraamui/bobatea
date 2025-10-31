@@ -6,43 +6,43 @@ import lib.draw
 fn test_resolve_key_msg_ctrl_and_a() {
 	assert resolve_key_msg(draw.Event{
 		modifiers: .ctrl
-		code: .a
-		utf8: 'a'
-	}).string() == "ctrl+a"
+		code:      .a
+		utf8:      'a'
+	}).string() == 'ctrl+a'
 }
 
 fn test_resolve_key_msg_ctrl_and_symbol() {
 	assert resolve_key_msg(draw.Event{
 		modifiers: .ctrl
-		code: .null
-		utf8: "🦈" // inserted char is just shark emoji
-	}).string() == "ctrl+🦈"
+		code:      .null
+		utf8:      '🦈' // inserted char is just shark emoji
+	}).string() == 'ctrl+🦈'
 }
 
 fn test_resolve_key_msg_modifiers_make_key_special() {
-	assert resolve_key_msg(draw.Event{ utf8: "z" }).k_type == .runes
-	assert resolve_key_msg(draw.Event{ modifiers: .ctrl, utf8: "z" }).k_type == .special
-	assert resolve_key_msg(draw.Event{ code: .z, modifiers: .shift, utf8: "Z" }).k_type == .runes
+	assert resolve_key_msg(draw.Event{ utf8: 'z' }).k_type == .runes
+	assert resolve_key_msg(draw.Event{ modifiers: .ctrl, utf8: 'z' }).k_type == .special
+	assert resolve_key_msg(draw.Event{ code: .z, modifiers: .shift, utf8: 'Z' }).k_type == .runes
 
-	assert resolve_key_msg(draw.Event{ code: .c, modifiers: .ctrl, utf8: "c" }) == KeyMsg{
-		runes: [`c`, `t`, `r`, `l`, `+`, `c`]
+	assert resolve_key_msg(draw.Event{ code: .c, modifiers: .ctrl, utf8: 'c' }) == KeyMsg{
+		runes:  [`c`, `t`, `r`, `l`, `+`, `c`]
 		k_type: .special
 	}
-	assert resolve_key_msg(draw.Event{ code: .c, modifiers: .ctrl, utf8: "c" }).string() == "ctrl+c"
+	assert resolve_key_msg(draw.Event{ code: .c, modifiers: .ctrl, utf8: 'c' }).string() == 'ctrl+c'
 }
 
 fn test_resolve_key_msg_to_string_no_modifiers() {
-	assert resolve_key_msg(draw.Event{ utf8: "a" }).string() == "a"
-	assert resolve_key_msg(draw.Event{ utf8: "b" }).string() == "b"
-	assert resolve_key_msg(draw.Event{ utf8: "á" }).string() == "á"
+	assert resolve_key_msg(draw.Event{ utf8: 'a' }).string() == 'a'
+	assert resolve_key_msg(draw.Event{ utf8: 'b' }).string() == 'b'
+	assert resolve_key_msg(draw.Event{ utf8: 'á' }).string() == 'á'
 
-	assert resolve_key_msg(draw.Event{ code: .tab }).string() == "tab"
-	assert resolve_key_msg(draw.Event{ code: .enter }).string() == "enter"
-	assert resolve_key_msg(draw.Event{ code: .escape }).string() == "escape"
-	assert resolve_key_msg(draw.Event{ code: .space }).string() == "space"
-	assert resolve_key_msg(draw.Event{ code: .backspace }).string() == "backspace"
-	assert resolve_key_msg(draw.Event{ code: .exclamation }).string() == "!"
-	assert resolve_key_msg(draw.Event{ code: .double_quote }).string() == "\""
+	assert resolve_key_msg(draw.Event{ code: .tab }).string() == 'tab'
+	assert resolve_key_msg(draw.Event{ code: .enter }).string() == 'enter'
+	assert resolve_key_msg(draw.Event{ code: .escape }).string() == 'escape'
+	assert resolve_key_msg(draw.Event{ code: .space }).string() == 'space'
+	assert resolve_key_msg(draw.Event{ code: .backspace }).string() == 'backspace'
+	assert resolve_key_msg(draw.Event{ code: .exclamation }).string() == '!'
+	assert resolve_key_msg(draw.Event{ code: .double_quote }).string() == '"'
 	assert resolve_key_msg(draw.Event{ code: .hashtag }).string() == '#'
 	assert resolve_key_msg(draw.Event{ code: .dollar }).string() == '$'
 	assert resolve_key_msg(draw.Event{ code: .percent }).string() == '%'
@@ -173,17 +173,17 @@ fn test_resolve_key_msg_to_string_no_modifiers() {
 }
 
 fn test_resolve_key_msg_to_string_with_ctrl_modifier() {
-	assert resolve_key_msg(draw.Event{ utf8: "a", modifiers: .ctrl }).string() == "ctrl+a"
-	assert resolve_key_msg(draw.Event{ utf8: "b", modifiers: .ctrl }).string() == "ctrl+b"
-	assert resolve_key_msg(draw.Event{ utf8: "á", modifiers: .ctrl }).string() == "ctrl+á"
+	assert resolve_key_msg(draw.Event{ utf8: 'a', modifiers: .ctrl }).string() == 'ctrl+a'
+	assert resolve_key_msg(draw.Event{ utf8: 'b', modifiers: .ctrl }).string() == 'ctrl+b'
+	assert resolve_key_msg(draw.Event{ utf8: 'á', modifiers: .ctrl }).string() == 'ctrl+á'
 
-	assert resolve_key_msg(draw.Event{ code: .tab, modifiers: .ctrl }).string() == "ctrl+tab"
-	assert resolve_key_msg(draw.Event{ code: .enter, modifiers: .ctrl }).string() == "ctrl+enter"
-	assert resolve_key_msg(draw.Event{ code: .escape, modifiers: .ctrl }).string() == "ctrl+escape"
-	assert resolve_key_msg(draw.Event{ code: .space, modifiers: .ctrl }).string() == "ctrl+space"
-	assert resolve_key_msg(draw.Event{ code: .backspace, modifiers: .ctrl }).string() == "ctrl+backspace"
-	assert resolve_key_msg(draw.Event{ code: .exclamation, modifiers: .ctrl }).string() == "ctrl+!"
-	assert resolve_key_msg(draw.Event{ code: .double_quote, modifiers: .ctrl }).string() == "ctrl+\""
+	assert resolve_key_msg(draw.Event{ code: .tab, modifiers: .ctrl }).string() == 'ctrl+tab'
+	assert resolve_key_msg(draw.Event{ code: .enter, modifiers: .ctrl }).string() == 'ctrl+enter'
+	assert resolve_key_msg(draw.Event{ code: .escape, modifiers: .ctrl }).string() == 'ctrl+escape'
+	assert resolve_key_msg(draw.Event{ code: .space, modifiers: .ctrl }).string() == 'ctrl+space'
+	assert resolve_key_msg(draw.Event{ code: .backspace, modifiers: .ctrl }).string() == 'ctrl+backspace'
+	assert resolve_key_msg(draw.Event{ code: .exclamation, modifiers: .ctrl }).string() == 'ctrl+!'
+	assert resolve_key_msg(draw.Event{ code: .double_quote, modifiers: .ctrl }).string() == 'ctrl+"'
 	assert resolve_key_msg(draw.Event{ code: .hashtag, modifiers: .ctrl }).string() == 'ctrl+#'
 	assert resolve_key_msg(draw.Event{ code: .dollar, modifiers: .ctrl }).string() == 'ctrl+$'
 	assert resolve_key_msg(draw.Event{ code: .percent, modifiers: .ctrl }).string() == 'ctrl+%'
@@ -314,30 +314,29 @@ fn test_resolve_key_msg_to_string_with_ctrl_modifier() {
 }
 
 fn test_resolve_key_msg_from_c() {
-	e := single_char("c")
+	e := single_char('c')
 	ctrl_and_c_msg := resolve_key_msg(draw.Event{
-		code: e.code
+		code:      e.code
 		modifiers: e.modifiers
-		utf8: e.utf8
-		ascii: e.ascii
+		utf8:      e.utf8
+		ascii:     e.ascii
 	})
 	assert ctrl_and_c_msg == KeyMsg{
-		runes: [`c`]
+		runes:  [`c`]
 		k_type: .runes
 	}
 }
 
-
 fn test_resolve_key_msg_from_ctrl_and_c() {
 	e := single_char(u8(3).ascii_str())
 	ctrl_and_c_msg := resolve_key_msg(draw.Event{
-		code: e.code
+		code:      e.code
 		modifiers: e.modifiers
-		utf8: e.utf8
-		ascii: e.ascii
+		utf8:      e.utf8
+		ascii:     e.ascii
 	})
 	assert ctrl_and_c_msg == KeyMsg{
-		runes: [`c`, `t`, `r`, `l`, `+`, `c`]
+		runes:  [`c`, `t`, `r`, `l`, `+`, `c`]
 		k_type: .special
 	}
 }
@@ -347,4 +346,3 @@ fn test_single_char_ctrl_and_c() {
 	assert e.modifiers == .ctrl
 	assert e.code == .c
 }
-
