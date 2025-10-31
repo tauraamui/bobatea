@@ -144,3 +144,45 @@ fn single_char(buf string) &tui.Event {
 
 	return event
 }
+
+fn multi_char(buf string) (&tui.Event, int) {
+	ch := buf[0]
+
+	mut event := &tui.Event{
+		typ:   .key_down
+		ascii: ch
+		code:  unsafe { tui.KeyCode(ch) }
+		utf8:  buf
+	}
+
+	match ch {
+		// special handling for `ctrl + letter`
+		// TODO: Fix assoc in V and remove this workaround :/
+		// 1  ... 26 { event = Event{ ...event, code: KeyCode(96 | ch), modifiers: .ctrl  } }
+		// 65 ... 90 { event = Event{ ...event, code: KeyCode(32 | ch), modifiers: .shift } }
+		// The bit `or`s here are really just `+`'s, just written in this way for a tiny performance improvement
+		// don't treat tab, enter as ctrl+i, ctrl+j
+		1...8, 11...26 {
+			event = &tui.Event{
+				typ:       event.typ
+				ascii:     event.ascii
+				utf8:      event.utf8
+				code:      unsafe { tui.KeyCode(96 | ch) }
+				modifiers: .ctrl
+			}
+		}
+		65...90 {
+			event = &tui.Event{
+				typ:       event.typ
+				ascii:     event.ascii
+				utf8:      event.utf8
+				code:      unsafe { tui.KeyCode(32 | ch) }
+				modifiers: .shift
+			}
+		}
+		else {}
+	}
+
+	return event, buf.len
+}
+

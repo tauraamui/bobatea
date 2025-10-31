@@ -314,15 +314,31 @@ fn test_resolve_key_msg_to_string_with_ctrl_modifier() {
 }
 
 fn test_resolve_key_msg_from_c() {
-	e := single_char('c')
-	ctrl_and_c_msg := resolve_key_msg(draw.Event{
-		code:      e.code
-		modifiers: e.modifiers
-		utf8:      e.utf8
-		ascii:     e.ascii
+	c := single_char('c')
+	c_msg := resolve_key_msg(draw.Event{
+		code:      c.code
+		modifiers: c.modifiers
+		utf8:      c.utf8
+		ascii:     c.ascii
 	})
-	assert ctrl_and_c_msg == KeyMsg{
+	assert c_msg == KeyMsg{
 		runes:  [`c`]
+		k_type: .runes
+	}
+}
+
+fn test_resolve_key_msg_from_accent_e() {
+	accent_e, _ := multi_char([u8(0xc3), 0xa9].bytestr())
+	accent_e_msg := resolve_key_msg(draw.Event{
+		code: accent_e.code
+		modifiers: accent_e.modifiers
+		utf8: accent_e.utf8
+		ascii: accent_e.ascii
+	})
+	assert [u8(0xc3), 0xa9].byterune()! == `é`
+	assert [u8(0xc3), 0xa9].bytestr() == 'é'
+	assert accent_e_msg == KeyMsg{
+		runes: [`e`]
 		k_type: .runes
 	}
 }
