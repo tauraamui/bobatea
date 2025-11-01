@@ -35,6 +35,12 @@ pub fn quit() Msg {
 	return QuitMsg{}
 }
 
+struct QuerySize {}
+
+pub fn emit_resize() Msg {
+	return QuerySize{}
+}
+
 pub type BatchMsg = []Cmd
 
 pub type SequenceMsg = []Cmd
@@ -171,13 +177,6 @@ pub fn (mut app App) run() ! {
 	)
 	app.ui = ctx
 
-	// emit initial resize event so models can initialize with correct dimensions
-	initial_resize_msg := ResizedMsg{
-		window_width:  ctx.window_width()
-		window_height: ctx.window_height()
-	}
-	app.handle_event(initial_resize_msg)
-
 	run()!
 }
 
@@ -235,6 +234,15 @@ fn (mut app App) handle_event(msg Msg) {
 	models_msg := u_cmd()
 	if models_msg is QuitMsg {
 		app.quit() or { panic(err) }
+	}
+
+	// if the returned message was a tea.QuerySize request message, emit a resize event instead
+	if models_msg is QuerySize {
+		app.next_msg = Msg(ResizedMsg{
+			window_width: app.ui.window_width()
+			window_height: app.ui.window_height()
+		})
+		return
 	}
 	app.next_msg = models_msg
 }
