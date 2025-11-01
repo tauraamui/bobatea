@@ -161,7 +161,7 @@ pub fn (mut app App) run() ! {
 		}
 	}
 
-	ctx, run := draw.new_context(
+	mut ctx, run := draw.new_context(
 		render_debug:         false
 		user_data:            app
 		event_fn:             event
@@ -170,6 +170,13 @@ pub fn (mut app App) run() ! {
 		use_alternate_buffer: true
 	)
 	app.ui = ctx
+
+	// emit initial resize event so models can initialize with correct dimensions
+	initial_resize_msg := ResizedMsg{
+		window_width:  ctx.window_width()
+		window_height: ctx.window_height()
+	}
+	app.handle_event(initial_resize_msg)
 
 	run()!
 }
@@ -197,7 +204,7 @@ fn event(e draw.Event, mut app App) {
 		}
 		.resized {
 			Msg(ResizedMsg{
-				window_width: e.width
+				window_width:  e.width
 				window_height: e.height
 			})
 		}

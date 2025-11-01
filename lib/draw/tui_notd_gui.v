@@ -187,14 +187,22 @@ pub struct ClipArea {
 fn (c ClipArea) apply_offsets(offsets Offsets) ClipArea {
 	min_xx, min_yy := apply_offsets(offsets, c.min_x, c.min_y)
 	max_xx, max_yy := apply_offsets(offsets, c.max_x, c.max_y)
-	return ClipArea{ min_xx, min_yy, max_xx, max_yy }
+	return ClipArea{min_xx, min_yy, max_xx, max_yy}
 }
 
 fn (c ClipArea) in_bounds(x int, y int) bool {
-	if x < c.min_x { return false }
-	if y < c.min_y { return false }
-	if x > c.max_x { return false }
-	if y > c.max_y { return false }
+	if x < c.min_x {
+		return false
+	}
+	if y < c.min_y {
+		return false
+	}
+	if x > c.max_x {
+		return false
+	}
+	if y > c.max_y {
+		return false
+	}
 	return true
 }
 
@@ -234,7 +242,7 @@ pub fn new_context(cfg Config) (&Contextable, Runner) {
 			use_alternate_buffer: cfg.use_alternate_buffer
 			frame_rate:           30
 		)
-		clip_area: none
+		clip_area:        none
 	}
 	ctx.setup_grid() or { panic('unable to init grid -> ${err}') }
 	return ctx, unsafe { ctx.run }
@@ -472,8 +480,10 @@ fn (mut ctx Context) draw_text(x int, y int, text string) {
 }
 
 fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
-	xx, yy := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x, y)
-	xx2, yy2 := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x2, y2)
+	xx, yy := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x,
+		y)
+	xx2, yy2 := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} },
+		x2, y2)
 
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L139
@@ -514,8 +524,10 @@ fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bo
 }
 
 fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
-	xx, yy := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x, y)
-	xx2, yy2 := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x2, y2)
+	xx, yy := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x,
+		y)
+	xx2, yy2 := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} },
+		x2, y2)
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L175
 	// ===== BLOCK START =====
