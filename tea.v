@@ -148,6 +148,16 @@ pub fn noop_cmd() Msg {
 }
 
 pub fn (mut app App) run() ! {
+	mut ctx, run := draw.new_context(
+		render_debug:         false
+		user_data:            app
+		event_fn:             event
+		frame_fn:             frame
+		capture_events:       true
+		use_alternate_buffer: true
+	)
+	app.ui = ctx
+
 	cmd := app.initial_model.init() or { noop_cmd }
 	models_msg := cmd()
 
@@ -162,20 +172,16 @@ pub fn (mut app App) run() ! {
 		SequenceMsg {
 			app.exec_sequence_msg(models_msg)
 		}
+		QuerySize {
+			app.send(ResizedMsg{
+				window_width: app.ui.window_width()
+				window_height: app.ui.window_height()
+			})
+		}
 		else {
 			app.next_msg = models_msg
 		}
 	}
-
-	mut ctx, run := draw.new_context(
-		render_debug:         false
-		user_data:            app
-		event_fn:             event
-		frame_fn:             frame
-		capture_events:       true
-		use_alternate_buffer: true
-	)
-	app.ui = ctx
 
 	run()!
 }
