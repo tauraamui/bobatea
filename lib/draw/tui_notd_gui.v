@@ -472,20 +472,22 @@ fn (mut ctx Context) draw_text(x int, y int, text string) {
 }
 
 fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int) {
+	xx, yy := apply_offsets(ctx.offsets, x, y)
+	xx2, yy2 := apply_offsets(ctx.offsets, x2, y2)
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L139
 	// ===== BLOCK START =====
-	min_x, min_y := if x < x2 { x } else { x2 }, if y < y2 { y } else { y2 }
-	max_x, _ := if x > x2 { x } else { x2 }, if y > y2 { y } else { y2 }
-	if y == y2 {
+	min_x, min_y := if xx < xx2 { xx } else { xx2 }, if yy < yy2 { yy } else { yy2 }
+	max_x, _ := if xx > xx2 { xx } else { xx2 }, if yy > yy2 { yy } else { yy2 }
+	if yy == yy2 {
 		// Horizontal line, performance improvement
 		ctx.set_cursor_position(min_x, min_y)
 		ctx.write(strings.repeat(` `, max_x + 1 - min_x))
 		return
 	}
 	// Draw the various points with Bresenham's line algorithm:
-	mut x0, x1 := x, x2
-	mut y0, y1 := y, y2
+	mut x0, x1 := xx, xx2
+	mut y0, y1 := yy, yy2
 	sx := if x0 < x1 { 1 } else { -1 }
 	sy := if y0 < y1 { 1 } else { -1 }
 	dx := if x0 < x1 { x1 - x0 } else { x0 - x1 }
@@ -511,12 +513,14 @@ fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int) {
 }
 
 fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int) {
+	xx, yy := apply_offsets(ctx.offsets, x, y)
+	xx2, yy2 := apply_offsets(ctx.offsets, x2, y2)
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L175
 	// ===== BLOCK START =====
 	// Draw the various points with Bresenham's line algorithm:
-	mut x0, x1 := x, x2
-	mut y0, y1 := y, y2
+	mut x0, x1 := xx, xx2
+	mut y0, y1 := yy, yy2
 	sx := if x0 < x1 { 1 } else { -1 }
 	sy := if y0 < y1 { 1 } else { -1 }
 	dx := if x0 < x1 { x1 - x0 } else { x0 - x1 }
@@ -545,18 +549,20 @@ fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int) {
 }
 
 fn (mut ctx Context) draw_rect(x int, y int, width int, height int) {
-	x2 := x + (width - 1)
-	y2 := y + (height - 1)
+	xx, yy := apply_offsets(ctx.offsets, x, y)
+	wwidth, hheight := apply_offsets(ctx.offsets, width, height)
+	x2 := xx + (wwidth - 1)
+	y2 := yy + (hheight - 1)
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L206
 	// ===== BLOCK START =====
-	if y == y2 || x == x2 {
-		ctx.draw_line(x, y, x2, y2)
+	if yy == y2 || xx == x2 {
+		ctx.draw_line(xx, yy, x2, y2)
 		return
 	}
-	min_y, max_y := if y < y2 { y, y2 } else { y2, y }
+	min_y, max_y := if yy < y2 { yy, y2 } else { y2, yy }
 	for y_pos in min_y .. max_y + 1 {
-		ctx.draw_line(x, y_pos, x2, y_pos)
+		ctx.draw_line(xx, y_pos, x2, y_pos)
 	}
 	// ===== BLOCK END =====
 }
