@@ -237,6 +237,7 @@ fn (mut app App) handle_event(msg Msg) {
 	}
 
 	// if the returned message was a tea.QuerySize request message, emit a resize event instead
+	//
 	if models_msg is QuerySize {
 		app.next_msg = Msg(ResizedMsg{
 			window_width: app.ui.window_width()
