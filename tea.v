@@ -161,25 +161,29 @@ pub fn (mut app App) run() ! {
 	cmd := app.initial_model.init() or { noop_cmd }
 	models_msg := cmd()
 
-	// Handle initial command message
-	match models_msg {
-		QuitMsg {
-			app.quit() or { panic(err) }
-		}
-		BatchMsg {
-			app.exec_batch_msg(models_msg)
-		}
-		SequenceMsg {
-			app.exec_sequence_msg(models_msg)
-		}
-		QuerySize {
-			app.send(ResizedMsg{
-				window_width: app.ui.window_width()
-				window_height: app.ui.window_height()
-			})
-		}
-		else {
-			app.next_msg = models_msg
+	// the terminal context is only fully set up post the run call
+	// so delay accessing/sending window size data until after this
+	defer {
+		// handle initial command message
+		match models_msg {
+			QuitMsg {
+				app.quit() or { panic(err) }
+			}
+			BatchMsg {
+				app.exec_batch_msg(models_msg)
+			}
+			SequenceMsg {
+				app.exec_sequence_msg(models_msg)
+			}
+			QuerySize {
+				app.send(ResizedMsg{
+					window_width: app.ui.window_width()
+					window_height: app.ui.window_height()
+				})
+			}
+			else {
+				app.next_msg = models_msg
+			}
 		}
 	}
 
