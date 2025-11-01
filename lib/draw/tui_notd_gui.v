@@ -471,9 +471,10 @@ fn (mut ctx Context) draw_text(x int, y int, text string) {
 	ctx.write(text)
 }
 
-fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int) {
-	xx, yy := apply_offsets(ctx.offsets, x, y)
-	xx2, yy2 := apply_offsets(ctx.offsets, x2, y2)
+fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
+	xx, yy := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x, y)
+	xx2, yy2 := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x2, y2)
+
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L139
 	// ===== BLOCK START =====
@@ -512,9 +513,9 @@ fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int) {
 	// ===== BLOCK END =====
 }
 
-fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int) {
-	xx, yy := apply_offsets(ctx.offsets, x, y)
-	xx2, yy2 := apply_offsets(ctx.offsets, x2, y2)
+fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
+	xx, yy := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x, y)
+	xx2, yy2 := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x2, y2)
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L175
 	// ===== BLOCK START =====
@@ -549,6 +550,7 @@ fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int) {
 }
 
 fn (mut ctx Context) draw_rect(x int, y int, width int, height int) {
+	re_apply_offsets := false
 	xx, yy := apply_offsets(ctx.offsets, x, y)
 	wwidth, hheight := apply_offsets(ctx.offsets, width, height)
 	x2 := xx + (wwidth - 1)
@@ -557,12 +559,12 @@ fn (mut ctx Context) draw_rect(x int, y int, width int, height int) {
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L206
 	// ===== BLOCK START =====
 	if yy == y2 || xx == x2 {
-		ctx.draw_line(xx, yy, x2, y2)
+		ctx.draw_line(xx, yy, x2, y2, re_apply_offsets)
 		return
 	}
 	min_y, max_y := if yy < y2 { yy, y2 } else { y2, yy }
 	for y_pos in min_y .. max_y + 1 {
-		ctx.draw_line(xx, y_pos, x2, y_pos)
+		ctx.draw_line(xx, y_pos, x2, y_pos, re_apply_offsets)
 	}
 	// ===== BLOCK END =====
 }
