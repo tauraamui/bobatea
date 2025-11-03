@@ -141,7 +141,7 @@ pub fn batch_optional(cmds []?Cmd) Cmd {
 }
 */
 
-struct NoopMsg {}
+pub struct NoopMsg {}
 
 pub fn noop_cmd() Msg {
 	return NoopMsg{}
