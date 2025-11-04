@@ -213,8 +213,26 @@ fn termios_reset() {
 }
 
 ///////////////////////////////////////////
-// TODO: do multiple sleep/read cycles, rather than one big one
-fn (mut ctx Context) termios_loop() {
+// Input event loop - runs at higher frequency to capture input events
+fn (mut ctx Context) input_loop() {
+	input_poll_time := 1_000 // 1ms polling interval for input events
+	for {
+		if !ctx.paused && ctx.cfg.event_fn != none {
+			unsafe {
+				len := C.read(C.STDIN_FILENO, &u8(ctx.read_buf.data) + ctx.read_buf.len,
+					ctx.read_buf.cap - ctx.read_buf.len)
+				ctx.resize_arr(ctx.read_buf.len + len)
+			}
+			if ctx.read_buf.len > 0 {
+				ctx.parse_events()
+			}
+		}
+		time.sleep(input_poll_time * time.microsecond)
+	}
+}
+
+// Rendering loop - runs at the configured frame rate
+fn (mut ctx Context) render_loop() {
 	frame_time := 1_000_000 / ctx.cfg.frame_rate
 	mut init_called := false
 	mut sw := time.new_stopwatch(auto_start: false)
@@ -224,22 +242,11 @@ fn (mut ctx Context) termios_loop() {
 			ctx.init()
 			init_called = true
 		}
-		// println('SLEEPING: $sleep_len')
 		if sleep_len > 0 {
 			time.sleep(sleep_len * time.microsecond)
 		}
 		if !ctx.paused {
 			sw.restart()
-			if ctx.cfg.event_fn != none {
-				unsafe {
-					len := C.read(C.STDIN_FILENO, &u8(ctx.read_buf.data) + ctx.read_buf.len,
-						ctx.read_buf.cap - ctx.read_buf.len)
-					ctx.resize_arr(ctx.read_buf.len + len)
-				}
-				if ctx.read_buf.len > 0 {
-					ctx.parse_events()
-				}
-			}
 			ctx.frame()
 			sw.pause()
 			e := sw.elapsed().microseconds()
@@ -248,6 +255,15 @@ fn (mut ctx Context) termios_loop() {
 			ctx.frame_count++
 		}
 	}
+}
+
+// Main loop coordinator - starts both input and render loops
+fn (mut ctx Context) termios_loop() {
+	// Start input loop in a separate thread
+	spawn ctx.input_loop()
+
+	// Run render loop in main thread
+	ctx.render_loop()
 }
 
 fn (mut ctx Context) parse_events() {

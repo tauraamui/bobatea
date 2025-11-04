@@ -98,8 +98,19 @@ pub fn init(cfg Config) &Context {
 	return ctx
 }
 
-// run starts the windows console or restarts if it was paused.
-pub fn (mut ctx Context) run() ! {
+// Input event loop - runs at higher frequency to capture input events
+fn (mut ctx Context) input_loop() {
+	input_poll_time := 1_000 // 1ms polling interval for input events
+	for {
+		if !ctx.paused && ctx.cfg.event_fn != none {
+			ctx.parse_events()
+		}
+		time.sleep(input_poll_time * time.microsecond)
+	}
+}
+
+// Rendering loop - runs at the configured frame rate
+fn (mut ctx Context) render_loop() {
 	frame_time := 1_000_000 / ctx.cfg.frame_rate
 	mut init_called := false
 	mut sw := time.new_stopwatch(auto_start: false)
@@ -114,9 +125,6 @@ pub fn (mut ctx Context) run() ! {
 		}
 		if !ctx.paused {
 			sw.restart()
-			if ctx.cfg.event_fn != none {
-				ctx.parse_events()
-			}
 			ctx.frame()
 			sw.pause()
 			e := sw.elapsed().microseconds()
@@ -124,6 +132,15 @@ pub fn (mut ctx Context) run() ! {
 			ctx.frame_count++
 		}
 	}
+}
+
+// run starts the windows console or restarts if it was paused.
+pub fn (mut ctx Context) run() ! {
+	// Start input loop in a separate thread
+	spawn ctx.input_loop()
+
+	// Run render loop in main thread
+	ctx.render_loop()
 }
 
 fn (mut ctx Context) parse_events() {
