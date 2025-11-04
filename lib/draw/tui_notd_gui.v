@@ -238,6 +238,7 @@ pub fn new_context(cfg Config) (&Contextable, Runner) {
 				cfg.event_fn(Event{e}, app)
 			}
 			frame_fn:             cfg.frame_fn
+			update_fn:            cfg.update_fn
 			capture_events:       cfg.capture_events
 			use_alternate_buffer: cfg.use_alternate_buffer
 			frame_rate:           30

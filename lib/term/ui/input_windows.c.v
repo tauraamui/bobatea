@@ -98,6 +98,17 @@ pub fn init(cfg Config) &Context {
 	return ctx
 }
 
+// Update loop - runs at high frequency for application logic updates
+fn (mut ctx Context) update_loop() {
+	update_time := 1_000_000 / ctx.cfg.update_rate // Convert Hz to microseconds
+	for {
+		if !ctx.paused {
+			ctx.update()
+		}
+		time.sleep(update_time * time.microsecond)
+	}
+}
+
 // Input event loop - runs at higher frequency to capture input events
 fn (mut ctx Context) input_loop() {
 	input_poll_time := 1_000 // 1ms polling interval for input events
@@ -138,7 +149,12 @@ fn (mut ctx Context) render_loop() {
 pub fn (mut ctx Context) run() ! {
 	// Start input loop in a separate thread
 	spawn ctx.input_loop()
-
+	
+	// Start update loop in a separate thread if update function is provided
+	if ctx.cfg.update_fn != none {
+		spawn ctx.update_loop()
+	}
+	
 	// Run render loop in main thread
 	ctx.render_loop()
 }

@@ -231,6 +231,17 @@ fn (mut ctx Context) input_loop() {
 	}
 }
 
+// Update loop - runs at high frequency for application logic updates
+fn (mut ctx Context) update_loop() {
+	update_time := 1_000_000 / ctx.cfg.update_rate // Convert Hz to microseconds
+	for {
+		if !ctx.paused {
+			ctx.update()
+		}
+		time.sleep(update_time * time.microsecond)
+	}
+}
+
 // Rendering loop - runs at the configured frame rate
 fn (mut ctx Context) render_loop() {
 	frame_time := 1_000_000 / ctx.cfg.frame_rate
@@ -257,11 +268,16 @@ fn (mut ctx Context) render_loop() {
 	}
 }
 
-// Main loop coordinator - starts both input and render loops
+// Main loop coordinator - starts all three loops
 fn (mut ctx Context) termios_loop() {
 	// Start input loop in a separate thread
 	spawn ctx.input_loop()
-
+	
+	// Start update loop in a separate thread if update function is provided
+	if ctx.cfg.update_fn != none {
+		spawn ctx.update_loop()
+	}
+	
 	// Run render loop in main thread
 	ctx.render_loop()
 }

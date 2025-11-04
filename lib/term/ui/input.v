@@ -187,12 +187,14 @@ pub:
 	user_data  voidptr
 	init_fn    ?fn (voidptr)
 	frame_fn   ?fn (voidptr)
+	update_fn  ?fn (voidptr)  // High-frequency update function
 	cleanup_fn ?fn (voidptr)
 	event_fn   ?fn (&Event, voidptr)
 	fail_fn    ?fn (string)
 
 	buffer_size int = 256
 	frame_rate  int = 30
+	update_rate int = 1000  // Update rate in Hz (default 1000Hz = 1ms intervals)
 	use_x11     bool
 
 	window_title         string
@@ -214,6 +216,12 @@ fn (ctx &Context) init() {
 @[inline]
 fn (ctx &Context) frame() {
 	f := ctx.cfg.frame_fn or { return }
+	f(ctx.cfg.user_data)
+}
+
+@[inline]
+fn (ctx &Context) update() {
+	f := ctx.cfg.update_fn or { return }
 	f(ctx.cfg.user_data)
 }
 

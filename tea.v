@@ -10,8 +10,10 @@ mut:
 	t_ref         &tui.Context
 	initial_model Model
 	event_invoked bool
+	update_invoked bool
 	next_msg      ?Msg
 	msg_queue     shared []Msg // Queue for messages from batch commands
+	update_rate   int = 1000 // Update rate in Hz (1000 = 1ms intervals)
 }
 
 pub type Cmd = fn () Msg
@@ -153,6 +155,7 @@ pub fn (mut app App) run() ! {
 		user_data:            app
 		event_fn:             event
 		frame_fn:             frame
+		update_fn:            update_loop  // Pass our update function
 		capture_events:       true
 		use_alternate_buffer: true
 	)
@@ -335,26 +338,43 @@ fn (mut app App) process_queued_messages() {
 	}
 }
 
-// NOTE(tauraamui) [22/10/2025]: this function is called on each iteration of runtime loop directly
-//                               we invoke the update loop of initial model here if an actual event
-//                               didn't fire, so that the initial model can still update logic per iter
-fn frame(mut app App) {
-	defer {
-		app.event_invoked = false
-	}
-
+// Update loop - runs at high frequency for model updates
+fn update_loop(mut app App) {
+	defer { app.update_invoked = true }
+	
 	// Process any queued messages from batch commands first
 	app.process_queued_messages()
 
-	// NOTE(tauraamui) [21/10/2025]: basically, if the stdlib event loop hasn't invoked update
-	//                               due to a lack of an actual event, call it from frame anyway
-	if app.event_invoked == false {
+	// Always call update, even if no events occurred
+	msg := app.next_msg or { Msg(NoopMsg{}) }
+	if app.next_msg != none {
+		app.next_msg = none
+	}
+	app.handle_event(msg)
+}
+
+// NOTE(tauraamui) [22/10/2025]: this function is called on each iteration of runtime loop directly
+//                               we now only handle rendering here, update logic moved to update_loop
+fn frame(mut app App) {
+	defer {
+		app.event_invoked = false
+		app.update_invoked = false
+	}
+
+	// Only render if we haven't already processed updates in this cycle
+	// This prevents double-processing when both update and frame are called
+	if !app.update_invoked {
+		// Process any queued messages from batch commands first
+		app.process_queued_messages()
+
+		// Call update if no update loop has run
 		msg := app.next_msg or { Msg(NoopMsg{}) }
 		if app.next_msg != none {
 			app.next_msg = none
 		}
 		app.handle_event(msg)
 	}
+
 	app.ui.clear()
 	app.ui.hide_cursor() // make it default, should think harder about this
 	// when it comes time to implement dynamic input fields etc.,
