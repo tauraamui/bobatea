@@ -17,7 +17,7 @@
 
 module draw
 
-import term.ui as tui
+import lib.term.ui as tui
 import strings
 import arrays
 

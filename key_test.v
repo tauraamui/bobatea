@@ -1,6 +1,6 @@
 module bobatea
 
-import term.ui as tui
+import lib.term.ui as tui
 import lib.draw
 
 fn test_resolve_key_msg_ctrl_and_a() {

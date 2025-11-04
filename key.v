@@ -1,6 +1,6 @@
 module bobatea
 
-import term.ui as tui
+import lib.term.ui as tui
 import lib.draw
 
 pub fn visible_len(s string) int {

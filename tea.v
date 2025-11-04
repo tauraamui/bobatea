@@ -1,6 +1,6 @@
 module bobatea
 
-import term.ui as tui
+import lib.term.ui as tui
 import lib.draw
 
 pub struct App {
@@ -177,7 +177,7 @@ pub fn (mut app App) run() ! {
 			}
 			QuerySize {
 				app.send(ResizedMsg{
-					window_width: app.ui.window_width()
+					window_width:  app.ui.window_width()
 					window_height: app.ui.window_height()
 				})
 			}
@@ -250,7 +250,7 @@ fn (mut app App) handle_event(msg Msg) {
 	//
 	if models_msg is QuerySize {
 		app.next_msg = Msg(ResizedMsg{
-			window_width: app.ui.window_width()
+			window_width:  app.ui.window_width()
 			window_height: app.ui.window_height()
 		})
 		return
@@ -319,7 +319,11 @@ fn (mut app App) process_queued_messages() {
 		lock app.msg_queue {
 			if app.msg_queue.len > 0 {
 				msg_to_process = app.msg_queue[0]
-				app.msg_queue.delete(0)
+				if app.msg_queue.len == 1 {
+					app.msg_queue.clear()
+				} else {
+					app.msg_queue = app.msg_queue[1..]
+				}
 			}
 		}
 

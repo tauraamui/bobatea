@@ -1,6 +1,6 @@
 module draw
 
-import term.ui as tui
+import lib.term.ui as tui
 
 pub struct Color {
 pub:

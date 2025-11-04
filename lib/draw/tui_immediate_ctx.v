@@ -15,7 +15,7 @@
 module draw
 
 import arrays
-import term.ui as tui
+import lib.term.ui as tui
 
 struct ImmediateContext {
 	render_debug bool
