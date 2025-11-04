@@ -206,7 +206,6 @@ pub:
 // NOTE(tauraamui) [22/10/2025]: this is invoked by the underlying runtime loop directly only
 //                               when an actual event comes in, (keypress/resize, etc.,)
 fn event(e draw.Event, mut app App) {
-	defer { app.event_invoked = true }
 	msg := match e.typ {
 		.key_down {
 			Msg(resolve_key_msg(e))
@@ -228,7 +227,7 @@ fn event(e draw.Event, mut app App) {
 }
 
 fn (mut app App) handle_event(msg Msg) {
-	// Handle special batch and sequence messages
+	// handle special batch and sequence messages
 	match msg {
 		BatchMsg {
 			app.exec_batch_msg(msg)
@@ -340,12 +339,10 @@ fn (mut app App) process_queued_messages() {
 
 // Update loop - runs at high frequency for model updates
 fn update_loop(mut app App) {
-	defer { app.update_invoked = true }
-	
-	// Process any queued messages from batch commands first
+	// process any queued messages from batch commands first
 	app.process_queued_messages()
 
-	// Always call update, even if no events occurred
+	// always call update, even if no events occurred
 	msg := app.next_msg or { Msg(NoopMsg{}) }
 	if app.next_msg != none {
 		app.next_msg = none
@@ -356,25 +353,6 @@ fn update_loop(mut app App) {
 // NOTE(tauraamui) [22/10/2025]: this function is called on each iteration of runtime loop directly
 //                               we now only handle rendering here, update logic moved to update_loop
 fn frame(mut app App) {
-	defer {
-		app.event_invoked = false
-		app.update_invoked = false
-	}
-
-	// Only render if we haven't already processed updates in this cycle
-	// This prevents double-processing when both update and frame are called
-	if !app.update_invoked {
-		// Process any queued messages from batch commands first
-		app.process_queued_messages()
-
-		// Call update if no update loop has run
-		msg := app.next_msg or { Msg(NoopMsg{}) }
-		if app.next_msg != none {
-			app.next_msg = none
-		}
-		app.handle_event(msg)
-	}
-
 	app.ui.clear()
 	app.ui.hide_cursor() // make it default, should think harder about this
 	// when it comes time to implement dynamic input fields etc.,
