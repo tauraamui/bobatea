@@ -241,7 +241,7 @@ pub fn new_context(cfg Config) (&Contextable, Runner) {
 			update_fn:            cfg.update_fn
 			capture_events:       cfg.capture_events
 			use_alternate_buffer: cfg.use_alternate_buffer
-			frame_rate:           30
+			frame_rate:           60
 		)
 		clip_area:        none
 	}
