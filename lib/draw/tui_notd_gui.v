@@ -564,9 +564,8 @@ fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int, do_apply_off
 fn (mut ctx Context) draw_rect(x int, y int, width int, height int) {
 	re_apply_offsets := false
 	xx, yy := apply_offsets(ctx.offsets, x, y)
-	wwidth, hheight := apply_offsets(ctx.offsets, width, height)
-	x2 := xx + (wwidth - 1)
-	y2 := yy + (hheight - 1)
+	x2 := xx + (width - 1)
+	y2 := yy + (height - 1)
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L206
 	// ===== BLOCK START =====
