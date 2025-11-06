@@ -2,11 +2,12 @@ module bobatea
 
 import lib.term.ui as tui
 import lib.draw
+import time
 
 pub struct App {
 	render_debug bool
 mut:
-	ui             &Context = unsafe { nil }
+	ui             &draw.Contextable = unsafe { nil }
 	t_ref          &tui.Context
 	initial_model  Model
 	event_invoked  bool
@@ -25,7 +26,7 @@ pub interface Model {
 mut:
 	init() ?Cmd
 	update(Msg) (Model, ?Cmd)
-	view(mut Context)
+	view(mut draw.Contextable)
 	clone() Model
 }
 
@@ -35,6 +36,11 @@ pub struct QuitMsg {}
 
 pub fn quit() Msg {
 	return QuitMsg{}
+}
+
+pub struct TickMsg {
+pub:
+	time time.Time
 }
 
 struct QuerySize {}
@@ -147,6 +153,79 @@ pub struct NoopMsg {}
 
 pub fn noop_cmd() Msg {
 	return NoopMsg{}
+}
+
+// tick produces a command at an interval independent of the system clock at
+// the given duration. That is, the timer begins precisely when invoked,
+// and runs for its entire duration.
+//
+// To produce the command, pass a duration and a function which returns
+// a message containing the time at which the tick occurred.
+//
+//	type TickMsg time.Time
+//
+//	cmd := tick(time.second, fn (t time.Time) Msg {
+//		return TickMsg{time: t}
+//	})
+//
+// Beginners' note: tick sends a single message and won't automatically
+// dispatch messages at an interval. To do that, you'll want to return another
+// tick command after receiving your tick message. For example:
+//
+//	fn do_tick() Cmd {
+//		return tick(time.second, fn (t time.Time) Msg {
+//			return TickMsg{time: t}
+//		})
+//	}
+//
+//	fn (m model) init() ?Cmd {
+//		return do_tick()
+//	}
+//
+//	fn (mut m model) update(msg Msg) (Model, ?Cmd) {
+//		match msg {
+//			TickMsg {
+//				// Return your tick command again to loop.
+//				return m, do_tick()
+//			}
+//			else {}
+//		}
+//		return m, none
+//	}
+pub fn tick(d time.Duration, f fn (time.Time) Msg) Cmd {
+	return fn [d, f] () Msg {
+		time.sleep(d)
+		return f(time.now())
+	}
+}
+
+// every produces a command at an interval aligned to the system clock.
+// That is, the timer begins at the next interval boundary.
+//
+// To produce the command, pass a duration and a function which returns
+// a message containing the time at which the tick occurred.
+//
+//	type TickMsg time.Time
+//
+//	cmd := every(time.second, fn (t time.Time) Msg {
+//		return TickMsg{time: t}
+//	})
+//
+// Beginners' note: every sends a single message and won't automatically
+// dispatch messages at an interval. To do that, you'll want to return another
+// every command after receiving your tick message.
+pub fn every(duration time.Duration, f fn (time.Time) Msg) Cmd {
+	return fn [duration, f] () Msg {
+		now := time.now()
+		// Calculate time until next interval boundary
+		nanos_per_duration := duration.nanoseconds()
+		current_nanos := now.unix_nano()
+		next_boundary := ((current_nanos / nanos_per_duration) + 1) * nanos_per_duration
+		wait_duration := time.Duration(next_boundary - current_nanos)
+
+		time.sleep(wait_duration)
+		return f(time.now())
+	}
 }
 
 pub fn (mut app App) run() ! {
