@@ -100,6 +100,7 @@ fn (mut grid Grid) resize(width int, height int) ! {
 	}
 	overlap_rows := int_min(grid.height, height)
 	overlap_cols := int_min(grid.width, width)
+	width_changed := grid.width != width
 
 	for i in 0 .. overlap_rows {
 		for j in 0 .. overlap_cols {
@@ -108,7 +109,19 @@ fn (mut grid Grid) resize(width int, height int) ! {
 			if old_index >= grid.data.len {
 				continue
 			}
-			new_data[new_index] = grid.data[old_index]
+
+			cell := grid.data[old_index]
+
+			// Only check for multi-width character truncation if width has changed
+			if width_changed && !cell.is_continuation && cell.visual_width > 1 {
+				// Check if all continuation cells would fit in the new width
+				if j + cell.visual_width > width {
+					// Multi-width character would be truncated, skip it
+					continue
+				}
+			}
+
+			new_data[new_index] = cell
 		}
 	}
 
@@ -628,9 +641,13 @@ fn (mut ctx Context) flush() {
 			style = cell.style
 
 			if prev_grid := ctx.prev_data {
-				if prev_cell := prev_grid.get(x, y) {
-					if prev_cell == cell {
-						continue
+				// Only skip rendering if the previous grid had the same dimensions
+				// and the cell at this position is identical
+				if prev_grid.width == ctx.data.width && prev_grid.height == ctx.data.height {
+					if prev_cell := prev_grid.get(x, y) {
+						if prev_cell == cell {
+							continue
+						}
 					}
 				}
 			}
