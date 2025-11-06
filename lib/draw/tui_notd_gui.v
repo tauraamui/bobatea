@@ -467,7 +467,10 @@ fn (mut ctx Context) clear() {
 		new_data[i] = Cell{}
 	}
 	ctx.data.data = new_data
+	// Clear all transient frame state
 	ctx.clear_all_offsets()
+	ctx.clear_clip_area()
+	ctx.cursor_pos_set = false
 }
 
 fn (mut ctx Context) draw_point(x int, y int) {
@@ -598,10 +601,9 @@ fn (mut ctx Context) flush() {
 		if prev_grid.width > new_width || prev_grid.height > new_height {
 			// Clear the entire screen when shrinking to ensure no leftover cells
 			ctx.ref.clear()
-			// Also clear offsets when downsizing as they may position content outside new bounds
-		}
-		if prev_grid.width != new_width || prev_grid.height != new_height {
+			// Also clear offsets and clip area when downsizing as they may position content outside new bounds
 			ctx.clear_all_offsets()
+			ctx.clear_clip_area()
 		}
 	}
 
