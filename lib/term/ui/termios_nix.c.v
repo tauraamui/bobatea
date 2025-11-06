@@ -272,12 +272,12 @@ fn (mut ctx Context) render_loop() {
 fn (mut ctx Context) termios_loop() {
 	// Start input loop in a separate thread
 	spawn ctx.input_loop()
-	
+
 	// Start update loop in a separate thread if update function is provided
 	if ctx.cfg.update_fn != none {
 		spawn ctx.update_loop()
 	}
-	
+
 	// Run render loop in main thread
 	ctx.render_loop()
 }

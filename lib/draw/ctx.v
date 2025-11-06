@@ -25,8 +25,8 @@ pub:
 	render_debug     bool
 	default_bg_color ?tui.Color
 	user_data        voidptr
-	frame_fn         fn (voidptr)        @[required]
-	update_fn        ?fn (voidptr)       // Optional high-frequency update function
+	frame_fn         fn (voidptr) @[required]
+	update_fn        ?fn (voidptr) // Optional high-frequency update function
 	event_fn         fn (Event, voidptr) @[required]
 
 	capture_events       bool

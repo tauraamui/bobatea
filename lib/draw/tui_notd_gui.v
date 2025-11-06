@@ -220,6 +220,7 @@ mut:
 	reset_bg_color()
 
 	write(c string)
+	clear()
 
 	flush()
 
@@ -588,9 +589,18 @@ fn (mut ctx Context) run() ! {
 fn (mut ctx Context) flush() {
 	defer { ctx.prev_data = ctx.data }
 
-	ctx.data.resize(ctx.window_width(), ctx.window_height()) or {
-		panic('flush failed to resize grid -> ${err}')
+	new_width := ctx.window_width()
+	new_height := ctx.window_height()
+
+	// Check if we need to clear cells that are now outside the new dimensions
+	if prev_grid := ctx.prev_data {
+		if prev_grid.width > new_width || prev_grid.height > new_height {
+			// Clear the entire screen when shrinking to ensure no leftover cells
+			ctx.ref.clear()
+		}
 	}
+
+	ctx.data.resize(new_width, new_height) or { panic('flush failed to resize grid -> ${err}') }
 	ctx.ref.hide_cursor()
 	mut style := ?Style(none)
 	for y in 0 .. ctx.data.height {

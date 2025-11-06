@@ -6,14 +6,14 @@ import lib.draw
 pub struct App {
 	render_debug bool
 mut:
-	ui            &Context = unsafe { nil }
-	t_ref         &tui.Context
-	initial_model Model
-	event_invoked bool
+	ui             &Context = unsafe { nil }
+	t_ref          &tui.Context
+	initial_model  Model
+	event_invoked  bool
 	update_invoked bool
-	next_msg      ?Msg
-	msg_queue     shared []Msg // Queue for messages from batch commands
-	update_rate   int = 1000 // Update rate in Hz (1000 = 1ms intervals)
+	next_msg       ?Msg
+	msg_queue      shared []Msg // Queue for messages from batch commands
+	update_rate    int = 1000 // Update rate in Hz (1000 = 1ms intervals)
 }
 
 pub type Cmd = fn () Msg
@@ -155,7 +155,7 @@ pub fn (mut app App) run() ! {
 		user_data:            app
 		event_fn:             event
 		frame_fn:             frame
-		update_fn:            update_loop  // Pass our update function
+		update_fn:            update_loop // Pass our update function
 		capture_events:       true
 		use_alternate_buffer: true
 	)
