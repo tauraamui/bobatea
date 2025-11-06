@@ -144,14 +144,8 @@ fn (mut ctx Context) termios_setup() ! {
 	os.signal_opt(.winch, fn (_ os.Signal) {
 		mut c := ctx_ptr
 		if unsafe { c != 0 } {
-			c.window_height, c.window_width = get_terminal_size()
-
-			mut event := &Event{
-				typ:    .resized
-				width:  c.window_width
-				height: c.window_height
-			}
-			c.event(event)
+			// Just flag that a resize is pending, don't process immediately
+			c.resize_pending = true
 		}
 	}) or {}
 
@@ -218,6 +212,19 @@ fn (mut ctx Context) input_loop() {
 	input_poll_time := 1_000 // 1ms polling interval for input events
 	for {
 		if !ctx.paused && ctx.cfg.event_fn != none {
+			// Check for pending resize events
+			if ctx.resize_pending {
+				ctx.resize_pending = false
+				ctx.window_height, ctx.window_width = get_terminal_size()
+
+				mut event := &Event{
+					typ:    .resized
+					width:  ctx.window_width
+					height: ctx.window_height
+				}
+				ctx.event(event)
+			}
+
 			unsafe {
 				len := C.read(C.STDIN_FILENO, &u8(ctx.read_buf.data) + ctx.read_buf.len,
 					ctx.read_buf.cap - ctx.read_buf.len)

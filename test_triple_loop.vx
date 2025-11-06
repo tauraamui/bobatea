@@ -3,12 +3,12 @@ import time
 
 struct App {
 mut:
-	tui &tui.Context = unsafe { nil }
-	event_count int
-	frame_count int
-	update_count int
-	last_event_time time.Time
-	last_frame_time time.Time
+	tui              &tui.Context = unsafe { nil }
+	event_count      int
+	frame_count      int
+	update_count     int
+	last_event_time  time.Time
+	last_frame_time  time.Time
 	last_update_time time.Time
 }
 
@@ -16,11 +16,11 @@ fn event(e &tui.Event, x voidptr) {
 	mut app := unsafe { &App(x) }
 	app.event_count++
 	app.last_event_time = time.now()
-	
+
 	if e.typ == .key_down && e.code == .escape {
 		exit(0)
 	}
-	
+
 	// Print event info to demonstrate high-frequency event handling
 	if e.typ == .key_down {
 		println('Event ${app.event_count}: Key pressed: ${e.code}')
@@ -41,7 +41,7 @@ fn frame(x voidptr) {
 	app.tui.clear()
 	app.tui.set_bg_color(r: 63, g: 81, b: 181)
 	app.tui.draw_rect(20, 6, 60, 18)
-	
+
 	app.tui.set_color(r: 255, g: 255, b: 255)
 	app.tui.draw_text(24, 8, 'Triple Loop TUI Test')
 	app.tui.draw_text(24, 10, 'Events: ${app.event_count}')
@@ -52,7 +52,7 @@ fn frame(x voidptr) {
 	app.tui.draw_text(24, 16, 'Render loop: 30Hz')
 	app.tui.draw_text(24, 18, 'Press any key to test input responsiveness')
 	app.tui.draw_text(24, 19, 'Press ESC to exit')
-	
+
 	app.tui.set_cursor_position(0, 0)
 	app.tui.reset()
 	app.tui.flush()
@@ -64,17 +64,17 @@ fn main() {
 		user_data:   app
 		event_fn:    event
 		frame_fn:    frame
-		update_fn:   update  // High-frequency update function
+		update_fn:   update // High-frequency update function
 		hide_cursor: true
-		frame_rate:  30      // 30 FPS for rendering
-		update_rate: 1000    // 1000 Hz for updates
+		frame_rate:  30   // 30 FPS for rendering
+		update_rate: 1000 // 1000 Hz for updates
 	)
-	
+
 	println('Starting triple-loop TUI application...')
 	println('Input events will be processed at ~1000Hz')
 	println('Update loop will run at 1000Hz')
 	println('Rendering will occur at 30Hz')
 	println('Press ESC to exit')
-	
+
 	app.tui.run()!
 }

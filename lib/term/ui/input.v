@@ -177,9 +177,10 @@ mut:
 	enable_su  bool
 	enable_rgb bool
 pub mut:
-	frame_count   u64
-	window_width  int
-	window_height int
+	frame_count    u64
+	window_width   int
+	window_height  int
+	resize_pending bool
 }
 
 pub struct Config {
