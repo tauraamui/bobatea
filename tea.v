@@ -20,7 +20,13 @@ mut:
 pub type Cmd = fn () Msg
 
 // Command represents either a single command or a batch of commands
-pub type Command = Cmd | BatchMsg | SequenceMsg
+pub type Command = Cmd | BatchMsg | SequenceMsg | TickCmd
+
+// TickCmd represents a delayed command that will be executed after a duration
+pub struct TickCmd {
+	duration time.Duration
+	callback fn (time.Time) Msg = unsafe { nil }
+}
 
 pub interface Model {
 mut:
@@ -194,8 +200,10 @@ pub fn noop_cmd() Msg {
 //	}
 pub fn tick(d time.Duration, f fn (time.Time) Msg) Cmd {
 	return fn [d, f] () Msg {
-		time.sleep(d)
-		return f(time.now())
+		return TickCmd{
+			duration: d
+			callback: f
+		}
 	}
 }
 
@@ -223,8 +231,10 @@ pub fn every(duration time.Duration, f fn (time.Time) Msg) Cmd {
 		next_boundary := ((current_nanos / nanos_per_duration) + 1) * nanos_per_duration
 		wait_duration := time.Duration(next_boundary - current_nanos)
 
-		time.sleep(wait_duration)
-		return f(time.now())
+		return TickCmd{
+			duration: wait_duration
+			callback: f
+		}
 	}
 }
 
@@ -293,6 +303,10 @@ fn (mut app App) handle_event(msg Msg) {
 			app.exec_sequence_msg(msg)
 			return
 		}
+		TickCmd {
+			app.exec_tick_cmd(msg)
+			return
+		}
 		QuitMsg {
 			app.quit() or { panic(err) }
 			return
@@ -327,6 +341,15 @@ fn (mut app App) handle_event(msg Msg) {
 	app.next_msg = models_msg
 }
 
+// exec_tick_cmd executes a tick command asynchronously
+fn (mut app App) exec_tick_cmd(tick_cmd TickCmd) {
+	go fn [mut app, tick_cmd] () {
+		time.sleep(tick_cmd.duration)
+		msg := tick_cmd.callback(time.now())
+		app.send(msg)
+	}()
+}
+
 // exec_batch_msg executes commands concurrently using go
 fn (mut app App) exec_batch_msg(batch_msg BatchMsg) {
 	for cmd in batch_msg {
@@ -350,6 +373,9 @@ fn (mut app App) exec_sequence_msg(seq_msg SequenceMsg) {
 			}
 			SequenceMsg {
 				app.exec_sequence_msg(msg)
+			}
+			TickCmd {
+				app.exec_tick_cmd(msg)
 			}
 			QuitMsg {
 				app.quit() or { panic(err) }
@@ -377,6 +403,9 @@ fn (mut app App) exec_cmd_async(cmd Cmd) {
 		}
 		SequenceMsg {
 			app.exec_sequence_msg(msg)
+		}
+		TickCmd {
+			app.exec_tick_cmd(msg)
 		}
 		QuitMsg {
 			app.quit() or { panic(err) }
