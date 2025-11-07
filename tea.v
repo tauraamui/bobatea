@@ -243,31 +243,8 @@ pub fn (mut app App) run() ! {
 	cmd := app.initial_model.init() or { noop_cmd }
 	models_msg := cmd()
 
-	// the terminal context is only fully set up post the run call
-	// so delay accessing/sending window size data until after this
-	defer {
-		// handle initial command message
-		match models_msg {
-			QuitMsg {
-				app.quit() or { panic(err) }
-			}
-			BatchMsg {
-				app.exec_batch_msg(models_msg)
-			}
-			SequenceMsg {
-				app.exec_sequence_msg(models_msg)
-			}
-			QuerySize {
-				app.send(ResizedMsg{
-					window_width:  app.ui.window_width()
-					window_height: app.ui.window_height()
-				})
-			}
-			else {
-				app.next_msg = models_msg
-			}
-		}
-	}
+	// Store the initial message to be processed after the TUI loop starts
+	app.next_msg = models_msg
 
 	run()!
 }
@@ -314,6 +291,17 @@ fn (mut app App) handle_event(msg Msg) {
 		}
 		SequenceMsg {
 			app.exec_sequence_msg(msg)
+			return
+		}
+		QuitMsg {
+			app.quit() or { panic(err) }
+			return
+		}
+		QuerySize {
+			app.next_msg = Msg(ResizedMsg{
+				window_width:  app.ui.window_width()
+				window_height: app.ui.window_height()
+			})
 			return
 		}
 		else {}
@@ -363,6 +351,16 @@ fn (mut app App) exec_sequence_msg(seq_msg SequenceMsg) {
 			SequenceMsg {
 				app.exec_sequence_msg(msg)
 			}
+			QuitMsg {
+				app.quit() or { panic(err) }
+				return
+			}
+			QuerySize {
+				app.send(ResizedMsg{
+					window_width:  app.ui.window_width()
+					window_height: app.ui.window_height()
+				})
+			}
 			else {
 				app.send(msg)
 			}
@@ -379,6 +377,15 @@ fn (mut app App) exec_cmd_async(cmd Cmd) {
 		}
 		SequenceMsg {
 			app.exec_sequence_msg(msg)
+		}
+		QuitMsg {
+			app.quit() or { panic(err) }
+		}
+		QuerySize {
+			app.send(ResizedMsg{
+				window_width:  app.ui.window_width()
+				window_height: app.ui.window_height()
+			})
 		}
 		else {
 			app.send(msg)
