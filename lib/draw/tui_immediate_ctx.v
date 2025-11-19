@@ -53,11 +53,11 @@ fn (mut ctx ImmediateContext) render_debug() bool {
 	return ctx.render_debug
 }
 
-fn (mut ctx ImmediateContext) window_width() int {
+fn (ctx ImmediateContext) window_width() int {
 	return ctx.ref.window_width
 }
 
-fn (mut ctx ImmediateContext) window_height() int {
+fn (ctx ImmediateContext) window_height() int {
 	return ctx.ref.window_height
 }
 

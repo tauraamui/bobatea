@@ -51,22 +51,30 @@ mut:
 	reset_bg_color()
 }
 
+pub interface Clipper {
+mut:
+	set_clip_area(c ClipArea)
+	clear_clip_area()
+}
+
+pub interface WindowSizer {
+	window_width() int
+	window_height() int
+}
+
 pub interface Renderer {
 	Drawer
 	Colorer
+	Clipper
+	Offsetter
+	WindowSizer
 }
 
 pub interface Contextable {
 	Renderer
-	Offsetter
 mut:
 	render_debug() bool
 	rate_limit_draws() bool
-	window_width() int
-	window_height() int
-
-	set_clip_area(c ClipArea)
-	clear_clip_area()
 
 	set_cursor_position(x int, y int)
 	set_cursor_to_block()

@@ -275,14 +275,14 @@ fn (mut ctx Context) render_debug() bool {
 	return ctx.render_debug
 }
 
-fn (mut ctx Context) window_width() int {
+fn (ctx Context) window_width() int {
 	if ctx.ref.window_width <= 0 {
 		return 100
 	}
 	return ctx.ref.window_width
 }
 
-fn (mut ctx Context) window_height() int {
+fn (ctx Context) window_height() int {
 	if ctx.ref.window_width <= 0 {
 		return 100
 	}
