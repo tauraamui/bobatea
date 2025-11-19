@@ -289,7 +289,8 @@ fn event(e draw.Event, mut app App) {
 			Msg(NoopMsg{})
 		}
 	}
-	app.handle_event(msg)
+	// Queue the event instead of handling immediately
+	app.send(msg)
 }
 
 fn (mut app App) handle_event(msg Msg) {
@@ -454,15 +455,15 @@ fn (mut app App) process_queued_messages() {
 
 // Update loop - runs at high frequency for model updates
 fn update_loop(mut app App) {
-	// process any queued messages from batch commands first
+	// Process all queued messages (from input events and batch commands)
 	app.process_queued_messages()
 
-	// always call update, even if no events occurred
+	// Also process next_msg if present (from previous frame's commands)
 	msg := app.next_msg or { Msg(NoopMsg{}) }
 	if app.next_msg != none {
 		app.next_msg = none
+		app.handle_event(msg)
 	}
-	app.handle_event(msg)
 }
 
 // NOTE(tauraamui) [22/10/2025]: this function is called on each iteration of runtime loop directly
