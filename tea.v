@@ -328,18 +328,34 @@ fn (mut app App) handle_event(msg Msg) {
 	models_msg := u_cmd()
 	if models_msg is QuitMsg {
 		app.quit() or { panic(err) }
-	}
-
-	// if the returned message was a tea.QuerySize request message, emit a resize event instead
-	//
-	if models_msg is QuerySize {
-		app.next_msg = Msg(ResizedMsg{
-			window_width:  app.ui.window_width()
-			window_height: app.ui.window_height()
-		})
 		return
 	}
-	app.next_msg = models_msg
+
+	// Handle the returned message immediately instead of deferring
+	match models_msg {
+		BatchMsg {
+			app.exec_batch_msg(models_msg)
+		}
+		SequenceMsg {
+			app.exec_sequence_msg(models_msg)
+		}
+		TickCmd {
+			app.exec_tick_cmd(models_msg)
+		}
+		QuerySize {
+			app.next_msg = Msg(ResizedMsg{
+				window_width:  app.ui.window_width()
+				window_height: app.ui.window_height()
+			})
+		}
+		NoopMsg {
+			// Do nothing
+		}
+		else {
+			// For other messages, queue them for next frame
+			app.next_msg = models_msg
+		}
+	}
 }
 
 // exec_tick_cmd executes a tick command asynchronously
