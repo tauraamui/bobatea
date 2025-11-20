@@ -14,7 +14,7 @@ mut:
 	update_invoked bool
 	next_msg       ?Msg
 	msg_queue      shared []Msg // Queue for messages from batch commands
-	update_rate    int = 1000 // Update rate in Hz (1000 = 1ms intervals)
+	update_rate    int = 2000 // Update rate in Hz (2000 = 0.5ms intervals)
 }
 
 pub type Cmd = fn () Msg

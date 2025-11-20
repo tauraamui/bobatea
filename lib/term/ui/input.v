@@ -195,7 +195,7 @@ pub:
 
 	buffer_size int = 256
 	frame_rate  int = 30
-	update_rate int = 1000 // Update rate in Hz (default 1000Hz = 1ms intervals)
+	update_rate int = 2000 // Update rate in Hz (default 2000Hz = 0.5ms intervals)
 	use_x11     bool
 
 	window_title         string

@@ -209,7 +209,7 @@ fn termios_reset() {
 ///////////////////////////////////////////
 // Input event loop - runs at higher frequency to capture input events
 fn (mut ctx Context) input_loop() {
-	input_poll_time := 1_000 // 1ms polling interval for input events
+	input_poll_time := 250 // 0.25ms polling interval for input events (4x faster than before)
 	for {
 		if !ctx.paused && ctx.cfg.event_fn != none {
 			// Check for pending resize events
@@ -390,6 +390,18 @@ fn multi_char(buf string) (&Event, int) {
 // Gets an entire, independent escape sequence from the buffer
 // Normally, this just means reading until the first letter, but there are some exceptions...
 fn escape_end(buf string) int {
+	// Fast path for standalone ESC key (no following characters)
+	// This makes the ESC key more responsive by not waiting for potential follow-up characters
+	if buf.len == 1 {
+		return 1
+	}
+	
+	// If the second character isn't a special character that could start an escape sequence,
+	// treat this as a standalone ESC key press
+	if buf.len > 1 && !(buf[1] == `[` || buf[1] == `O` || buf[1] == `P`) {
+		return 1
+	}
+	
 	mut i := 0
 	for {
 		if i + 1 == buf.len {
@@ -416,6 +428,16 @@ fn escape_end(buf string) int {
 }
 
 fn escape_sequence(buf_ string) (&Event, int) {
+	// Fast path for standalone ESC key
+	if buf_.len == 1 {
+		return &Event{
+			typ:   .key_down
+			ascii: 27
+			code:  .escape
+			utf8:  buf_
+		}, 1
+	}
+
 	end := escape_end(buf_)
 	single := buf_[..end] // read until the end of the sequence
 	buf := single[1..] // skip the escape character
