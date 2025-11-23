@@ -174,20 +174,21 @@ struct Context {
 	render_debug     bool
 	default_bg_color ?tui.Color
 mut:
-	ref            NativeContext
-	data           Grid
-	clip_area      ?ClipArea
-	prev_data      ?Grid
-	cursor_pos     Pos
-	cursor_pos_set bool
-	cursor_style   CursorStyle
-	hide_cursor    bool
-	style          ?Style
-	bold           bool
-	fg_color       ?Color
-	bg_color       ?Color
-	offsets        Offsets
-	id_counter     int
+	ref                 NativeContext
+	data                Grid
+	clip_area           ?ClipArea
+	clip_area_offset_id int = -1
+	prev_data           ?Grid
+	cursor_pos          Pos
+	cursor_pos_set      bool
+	cursor_style        CursorStyle
+	hide_cursor         bool
+	style               ?Style
+	bold                bool
+	fg_color            ?Color
+	bg_color            ?Color
+	offsets             Offsets
+	id_counter          int
 }
 
 pub struct ClipArea {
@@ -197,10 +198,24 @@ pub struct ClipArea {
 	max_y int
 }
 
-fn (c ClipArea) apply_offsets(offsets Offsets) ClipArea {
-	min_xx, min_yy := apply_offsets(offsets, c.min_x, c.min_y)
-	max_xx, max_yy := apply_offsets(offsets, c.max_x, c.max_y)
-	return ClipArea{min_xx, min_yy, max_xx, max_yy}
+fn (c ClipArea) apply_offsets(ctx Context) ClipArea {
+	offsets_to_apply := if ctx.clip_area_offset_id != -1 {
+		if index := ctx.map_id_to_index(ctx.clip_area_offset_id) {
+			ctx.offsets[..index + 1]
+		} else {
+			ctx.offsets
+		}
+	} else {
+		ctx.offsets
+	}
+	min_xx, min_yy := apply_offsets(offsets_to_apply, c.min_x, c.min_y)
+	max_xx, max_yy := apply_offsets(offsets_to_apply, c.max_x, c.max_y)
+	return ClipArea{
+		min_x: min_xx
+		min_y: min_yy
+		max_x: max_xx
+		max_y: max_yy
+	}
 }
 
 fn (c ClipArea) in_bounds(x int, y int) bool {
@@ -359,11 +374,17 @@ fn (mut ctx Context) clear_all_offsets() {
 }
 
 fn (mut ctx Context) set_clip_area(c ClipArea) {
+	ctx.clip_area_offset_id = if ctx.offsets.len > 0 {
+		ctx.offsets.last().id
+	} else {
+		-1
+	}
 	ctx.clip_area = c
 }
 
 fn (mut ctx Context) clear_clip_area() {
 	ctx.clip_area = none
+	ctx.clip_area_offset_id = -1
 }
 
 fn rune_visual_width(r rune) int {
@@ -380,7 +401,7 @@ fn (mut ctx Context) write(c string) {
 		y := cursor_pos.y
 
 		if clip_area := ctx.clip_area {
-			if !clip_area.apply_offsets(ctx.offsets).in_bounds(x, y) {
+			if !clip_area.apply_offsets(ctx).in_bounds(x, y) {
 				x_offset += width
 				continue
 			}
