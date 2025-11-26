@@ -102,7 +102,7 @@ fn (mut ctx Context) termios_setup() ! {
 	tios.c_cc[C.VMIN] = 0
 	termios.tcsetattr(C.STDIN_FILENO, C.TCSAFLUSH, mut tios)
 	// enable mouse input
-	print('\x1b[?1003h\x1b[?1006h')
+	print('\x1b[?1003h\x1b[?1006h\x1b[?1004h')
 	flush_stdout()
 	if ctx.cfg.use_alternate_buffer {
 		// switch to the alternate buffer
@@ -197,7 +197,7 @@ fn termios_reset() {
 	// C.TCSANOW ??
 	mut startup := termios_at_startup
 	termios.tcsetattr(C.STDIN_FILENO, C.TCSAFLUSH, mut startup)
-	print('\x1b[?1003l\x1b[?1006l\x1b[?25h')
+	print('\x1b[?1003l\x1b[?1006l\x1b[?1004l\x1b[?25h')
 	flush_stdout()
 	c := ctx_ptr
 	if unsafe { c != 0 } && c.cfg.use_alternate_buffer {
@@ -462,6 +462,19 @@ fn escape_sequence(buf_ string) (&Event, int) {
 			utf8:      single
 			modifiers: modifiers
 		}, 2
+	}
+	// ----------------
+	//   Focus events
+	// ----------------
+	if buf == '[I' {
+		return &Event{
+			typ: .focused
+		}, end
+	}
+	if buf == '[O' {
+		return &Event{
+			typ: .unfocused
+		}, end
 	}
 	// ----------------
 	//   Mouse events

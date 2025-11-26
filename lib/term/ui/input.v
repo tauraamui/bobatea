@@ -140,6 +140,8 @@ pub enum EventType {
 	mouse_scroll
 	key_down
 	resized
+	focused
+	unfocused
 }
 
 @[flag]

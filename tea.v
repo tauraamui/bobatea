@@ -4,6 +4,7 @@ import lib.term.ui as tui
 import lib.draw
 import time
 
+@[heap]
 pub struct App {
 	render_debug bool
 mut:
@@ -269,6 +270,9 @@ pub:
 	window_height int
 }
 
+pub struct FocusedMsg {}
+pub struct BlurredMsg {}
+
 // NOTE(tauraamui) [22/10/2025]: this is invoked by the underlying runtime loop directly only
 //                               when an actual event comes in, (keypress/resize, etc.,)
 fn event(e draw.Event, mut app App) {
@@ -284,6 +288,12 @@ fn event(e draw.Event, mut app App) {
 				window_width:  e.width
 				window_height: e.height
 			})
+		}
+		.focused {
+			Msg(FocusedMsg{})
+		}
+		.unfocused {
+			Msg(BlurredMsg{})
 		}
 		else {
 			Msg(NoopMsg{})

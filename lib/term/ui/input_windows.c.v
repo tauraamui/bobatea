@@ -57,7 +57,7 @@ pub fn init(cfg Config) &Context {
 		panic('could not set raw input mode')
 	}
 	// enable window and mouse input events.
-	if !C.SetConsoleMode(stdin_handle, C.ENABLE_WINDOW_INPUT | C.ENABLE_MOUSE_INPUT) {
+	if !C.SetConsoleMode(stdin_handle, C.ENABLE_WINDOW_INPUT | C.ENABLE_MOUSE_INPUT | 0x0010) {
 		panic('could not set raw input mode')
 	}
 	// store the current title, so restore_terminal_state can get it back
@@ -341,9 +341,12 @@ fn (mut ctx Context) parse_events() {
 			// C.MENU_EVENT {
 			// 	e := unsafe { ctx.read_buf[i].Event.MenuEvent }
 			// }
-			// C.FOCUS_EVENT {
-			// 	e := unsafe { ctx.read_buf[i].Event.FocusEvent }
-			// }
+			C.FOCUS_EVENT {
+				e := unsafe { ctx.read_buf[i].Event.FocusEvent }
+				ctx.event(&Event{
+					typ: if e.bSetFocus != 0 { .focused } else { .unfocused }
+				})
+			}
 			else {}
 		}
 	}
