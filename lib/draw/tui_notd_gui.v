@@ -171,9 +171,9 @@ enum CursorStyle as u8 {
 }
 
 struct Context {
-	render_debug     bool
-	default_bg_color ?tui.Color
+	render_debug        bool
 mut:
+	default_bg_color    ?Color
 	ref                 NativeContext
 	data                Grid
 	clip_area           ?ClipArea
@@ -481,6 +481,15 @@ fn (mut ctx Context) set_bg_color(c Color) {
 	ctx.bg_color = c
 }
 
+fn (mut ctx Context) set_default_bg_color(c Color) {
+	ctx.default_bg_color = c
+}
+
+fn (mut ctx Context) reset_default_bg_color() {
+	ctx.default_bg_color = none
+}
+
+
 fn (mut ctx Context) reset_color() {
 	ctx.fg_color = none
 }
@@ -679,6 +688,11 @@ fn (mut ctx Context) flush() {
 			}
 			if c := cell.bg_color {
 				ctx.ref.set_bg_color(tui.Color{c.r, c.g, c.b})
+			} else {
+				if default_bg_color := ctx.default_bg_color {
+					c := default_bg_color
+					ctx.ref.set_bg_color(tui.Color{c.r, c.g, c.b})
+				}
 			}
 
 			ctx.ref.write(cell.str())

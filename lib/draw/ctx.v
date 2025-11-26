@@ -23,7 +23,7 @@ pub struct Event {
 pub struct Config {
 pub:
 	render_debug     bool
-	default_bg_color ?tui.Color
+	default_bg_color ?Color
 	user_data        voidptr
 	frame_fn         fn (voidptr) @[required]
 	update_fn        ?fn (voidptr) // Optional high-frequency update function
@@ -47,6 +47,8 @@ pub interface Colorer {
 mut:
 	set_color(c Color)
 	set_bg_color(c Color)
+	set_default_bg_color(c Color)
+	reset_default_bg_color()
 	reset_color()
 	reset_bg_color()
 }
