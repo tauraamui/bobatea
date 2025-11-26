@@ -395,13 +395,13 @@ fn escape_end(buf string) int {
 	if buf.len == 1 {
 		return 1
 	}
-	
+
 	// If the second character isn't a special character that could start an escape sequence,
 	// treat this as a standalone ESC key press
 	if buf.len > 1 && !(buf[1] == `[` || buf[1] == `O` || buf[1] == `P`) {
 		return 1
 	}
-	
+
 	mut i := 0
 	for {
 		if i + 1 == buf.len {
@@ -549,6 +549,7 @@ fn escape_sequence(buf_ string) (&Event, int) {
 	mut code := KeyCode.null
 	mut modifiers := unsafe { Modifiers(0) }
 	match buf {
+		'[91;5u'   { code = .escape }
 		'[A', 'OA' { code = .up }
 		'[B', 'OB' { code = .down }
 		'[C', 'OC' { code = .right }
