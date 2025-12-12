@@ -330,7 +330,39 @@ fn (mut ctx Context) parse_events() {
 			}
 		}
 		if unsafe { event != 0 } {
-			ctx.event(event)
+			// Handle TMUX key forwarding: Ctrl+w followed by h/j/k/l
+			// If we have a pending Ctrl+w and this is h/j/k/l, combine them
+			if ctx.pending_ctrl_w && event.code in [KeyCode.h, .j, .k, .l] {
+				// Create combined event: ctrl+w+h, ctrl+w+j, etc.
+				combined_event := &Event{
+					typ:       event.typ
+					ascii:     event.ascii
+					code:      KeyCode.w  // Keep as w so resolve_key_msg can detect this case
+					utf8:      '\x17' + event.utf8  // '\x17' is Ctrl+w + the second key
+					modifiers: .ctrl
+				}
+				ctx.event(combined_event)
+				ctx.pending_ctrl_w = false
+			} else if ctx.pending_ctrl_w {
+				// We had a pending Ctrl+w but the next key wasn't h/j/k/l
+				// First emit the pending Ctrl+w event
+				ctrl_w_event := &Event{
+					typ:       .key_down
+					ascii:     23  // Ctrl+w byte
+					code:      KeyCode.w
+					utf8:      'w'
+					modifiers: .ctrl
+				}
+				ctx.event(ctrl_w_event)
+				ctx.event(event)  // Then emit the current event
+				ctx.pending_ctrl_w = false
+			} else if event.code == KeyCode.w && event.modifiers == .ctrl {
+				// This is Ctrl+w - set pending flag and don't emit yet
+				ctx.pending_ctrl_w = true
+			} else {
+				// Normal event - emit immediately
+				ctx.event(event)
+			}
 			nr_iters = 0
 		}
 	}

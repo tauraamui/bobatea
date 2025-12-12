@@ -375,6 +375,50 @@ fn test_resolve_key_msg_from_ctrl_and_c() {
 	}
 }
 
+fn test_resolve_key_msg_ctrl_w_and_h() {
+	// Test Ctrl+w+h combination (TMUX forwarded)
+	ctrl_w_h := resolve_key_msg(draw.Event{
+		modifiers: .ctrl
+		code:      .w
+		utf8:      '\x17h' // Ctrl+w + h
+	})
+	assert ctrl_w_h.string() == 'ctrl+w+h'
+	assert ctrl_w_h.k_type == .special
+}
+
+fn test_resolve_key_msg_ctrl_w_and_j() {
+	// Test Ctrl+w+j combination (TMUX forwarded)
+	ctrl_w_j := resolve_key_msg(draw.Event{
+		modifiers: .ctrl
+		code:      .w
+		utf8:      '\x17j' // Ctrl+w + j
+	})
+	assert ctrl_w_j.string() == 'ctrl+w+j'
+	assert ctrl_w_j.k_type == .special
+}
+
+fn test_resolve_key_msg_ctrl_w_and_k() {
+	// Test Ctrl+w+k combination (TMUX forwarded)
+	ctrl_w_k := resolve_key_msg(draw.Event{
+		modifiers: .ctrl
+		code:      .w
+		utf8:      '\x17k' // Ctrl+w + k
+	})
+	assert ctrl_w_k.string() == 'ctrl+w+k'
+	assert ctrl_w_k.k_type == .special
+}
+
+fn test_resolve_key_msg_ctrl_w_and_l() {
+	// Test Ctrl+w+l combination (TMUX forwarded)
+	ctrl_w_l := resolve_key_msg(draw.Event{
+		modifiers: .ctrl
+		code:      .w
+		utf8:      '\x17l' // Ctrl+w + l
+	})
+	assert ctrl_w_l.string() == 'ctrl+w+l'
+	assert ctrl_w_l.k_type == .special
+}
+
 fn test_single_char_ctrl_and_c() {
 	e := single_char(u8(3).ascii_str())
 	assert e.modifiers == .ctrl

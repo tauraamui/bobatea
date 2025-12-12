@@ -72,6 +72,20 @@ fn resolve_key_msg(e draw.Event) KeyMsg {
 	prefix := if e.modifiers.has(.ctrl) { 'ctrl+' } else { '' }
 	is_special := special_keycodes.contains(e.code)
 
+	// Special case: Handle TMUX forwarded Ctrl+w + h/j/k/l combinations
+	// When the utf8 field contains "\x17j" (Ctrl+w + j), convert it to "ctrl+w+j"
+	if e.modifiers.has(.ctrl) && e.utf8.len >= 2 && e.code == .w {
+		second_char_byte := e.utf8[1]
+		if second_char_byte in [u8(`h`), `j`, `k`, `l`] {
+			second_char := second_char_byte.ascii_str()
+			return KeyMsg{
+				alt:    e.modifiers.has(.alt)
+				runes:  'ctrl+w+${second_char}'.runes()
+				k_type: .special
+			}
+		}
+	}
+
 	return KeyMsg{
 		alt:    e.modifiers.has(.alt)
 		runes:  '${prefix}${code_to_str(e.code, e.utf8, is_special)}'.runes()

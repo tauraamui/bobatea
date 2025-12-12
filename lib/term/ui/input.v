@@ -179,10 +179,11 @@ mut:
 	enable_su  bool
 	enable_rgb bool
 pub mut:
-	frame_count    u64
-	window_width   int
-	window_height  int
-	resize_pending bool
+	frame_count     u64
+	window_width    int
+	window_height   int
+	resize_pending  bool
+	pending_ctrl_w  bool // Track pending Ctrl+w for TMUX key forwarding
 }
 
 pub struct Config {
