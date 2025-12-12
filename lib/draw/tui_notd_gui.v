@@ -178,6 +178,7 @@ mut:
 	data                Grid
 	clip_area           ?ClipArea
 	clip_area_offset_id int = -1
+	cached_clip_area    ?ClipArea // clip area with previous offsets now applied
 	prev_data           ?Grid
 	cursor_pos          Pos
 	cursor_pos_set      bool
@@ -348,7 +349,11 @@ fn (mut ctx Context) pop_offset() ?Offset {
 	if ctx.offsets.len == 0 {
 		return none
 	}
-	return ctx.offsets.pop()
+	result := ctx.offsets.pop()
+	if clip_area := ctx.clip_area {
+        ctx.cached_clip_area = clip_area.apply_offsets(ctx)
+    }
+	return result
 }
 
 fn (mut ctx Context) clear_offsets_to(id int) {
@@ -362,6 +367,9 @@ fn (mut ctx Context) clear_to_offset(id int) {
 
 fn (mut ctx Context) clear_offsets_from(id int) {
 	ctx.clear_from_offset(id)
+	if clip_area := ctx.clip_area {
+        ctx.cached_clip_area = clip_area.apply_offsets(ctx)
+    }
 }
 
 fn (mut ctx Context) clear_from_offset(id int) {
@@ -371,6 +379,9 @@ fn (mut ctx Context) clear_from_offset(id int) {
 
 fn (mut ctx Context) clear_all_offsets() {
 	ctx.offsets.clear()
+	if clip_area := ctx.clip_area {
+        ctx.cached_clip_area = clip_area.apply_offsets(ctx)
+    }
 }
 
 fn (mut ctx Context) set_clip_area(c ClipArea) {
@@ -380,11 +391,13 @@ fn (mut ctx Context) set_clip_area(c ClipArea) {
 		-1
 	}
 	ctx.clip_area = c
+	ctx.cached_clip_area = c.apply_offsets(ctx)
 }
 
 fn (mut ctx Context) clear_clip_area() {
 	ctx.clip_area = none
 	ctx.clip_area_offset_id = -1
+	ctx.cached_clip_area = none
 }
 
 fn rune_visual_width(r rune) int {
@@ -400,12 +413,13 @@ fn (mut ctx Context) write(c string) {
 		x := cursor_pos.x + x_offset
 		y := cursor_pos.y
 
-		if clip_area := ctx.clip_area {
-			if !clip_area.apply_offsets(ctx).in_bounds(x, y) {
-				x_offset += width
-				continue
-			}
-		}
+		if clip_area := ctx.cached_clip_area {
+            if !clip_area.in_bounds(x, y) {
+                x_offset += width
+                continue
+            }
+        }
+
 
 		// Set the main cell with the character
 		ctx.data.set(x, y, Cell{
