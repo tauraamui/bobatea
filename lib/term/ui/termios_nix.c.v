@@ -290,9 +290,40 @@ fn (mut ctx Context) parse_events() {
 			ctx.shift(len)
 		} else {
 			if ctx.read_all_bytes {
-				e, len := multi_char(ctx.read_buf.bytestr())
-				event = unsafe { e }
-				ctx.shift(len)
+				// When read_all_bytes is enabled, multi_char() processes the entire buffer as one event.
+				// However, this causes issues when terminal multiplexers like tmux send compound sequences
+				// that should be treated as separate key events. For example, when forwarding "C-w" + "j",
+				// tmux might send it as "ctrl+\x17j" which should generate two separate events:
+				// 1. The literal text "ctrl+" (if present) as a multi-char event
+				// 2. Ctrl-W (byte 23) as a single control character event
+				// 3. "j" as a multi-char event
+				// This splitting logic ensures control characters in the buffer generate separate events.
+				mut split_pos := -1
+				for i := 0; i < ctx.read_buf.len; i++ {
+					ch := ctx.read_buf[i]
+					// Look for control characters (1-26), but skip tab(9) and enter(10)
+					// which have special meaning and should not split the buffer
+					if ch >= 1 && ch <= 26 && ch != 9 && ch != 10 {
+						split_pos = i
+						break
+					}
+				}
+				
+				if split_pos > 0 {
+					// Process the prefix before the control character
+					e, len := multi_char(ctx.read_buf.bytestr()[..split_pos])
+					event = unsafe { e }
+					ctx.shift(len)
+				} else if split_pos == 0 {
+					// The control character is at the start, process it as a single char
+					event = single_char(ctx.read_buf.bytestr())
+					ctx.shift(1)
+				} else {
+					// No control characters to split on, process the entire buffer
+					e, len := multi_char(ctx.read_buf.bytestr())
+					event = unsafe { e }
+					ctx.shift(len)
+				}
 			} else {
 				event = single_char(ctx.read_buf.bytestr())
 				ctx.shift(1)
