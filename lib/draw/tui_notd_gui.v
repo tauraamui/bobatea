@@ -35,6 +35,15 @@ mut:
 	height    int
 }
 
+fn (grid Grid) clone() Grid {
+	return Grid{
+		data: grid.data.clone()
+		prev_data: grid.prev_data.clone()
+		width: grid.width
+		height: grid.height
+	}
+}
+
 fn Grid.new(width int, height int) !Grid {
 	if width < 0 || height < 0 {
 		return error('width and height must be positive')
@@ -299,7 +308,7 @@ fn (ctx Context) window_width() int {
 }
 
 fn (ctx Context) window_height() int {
-	if ctx.ref.window_width <= 0 {
+	if ctx.ref.window_height <= 0 {
 		return 100
 	}
 	return ctx.ref.window_height
@@ -648,7 +657,7 @@ fn (mut ctx Context) run() ! {
 }
 
 fn (mut ctx Context) flush() {
-	defer { ctx.prev_data = ctx.data }
+	defer { ctx.prev_data = ctx.data.clone() }
 
 	new_width := ctx.window_width()
 	new_height := ctx.window_height()
