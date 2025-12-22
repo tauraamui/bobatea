@@ -306,6 +306,9 @@ fn event(e draw.Event, mut app App) {
 fn (mut app App) handle_event(msg Msg) {
 	// handle special batch and sequence messages
 	match msg {
+		NoopMsg {
+			return
+		}
 		BatchMsg {
 			app.exec_batch_msg(msg)
 			return
