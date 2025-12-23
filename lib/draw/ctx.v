@@ -94,4 +94,5 @@ mut:
 	//	run() !
 	clear()
 	flush()
+	clear_prev_data()
 }

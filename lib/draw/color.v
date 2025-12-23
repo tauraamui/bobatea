@@ -27,3 +27,8 @@ fn ansi2rgb(ansi_color int) (u8, u8, u8) {
 
 	return r, g, b
 }
+
+fn (a Color) == (b Color) bool {
+	return (a.r == b.r && a.g == b.g && a.b == b.b)
+}
+

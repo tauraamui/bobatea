@@ -273,6 +273,12 @@ pub:
 pub struct FocusedMsg {}
 pub struct BlurredMsg {}
 
+pub struct ClearScreenMsg {}
+
+pub fn clear_screen() Msg {
+	return ClearScreenMsg{}
+}
+
 // NOTE(tauraamui) [22/10/2025]: this is invoked by the underlying runtime loop directly only
 //                               when an actual event comes in, (keypress/resize, etc.,)
 fn event(e draw.Event, mut app App) {
@@ -307,6 +313,10 @@ fn (mut app App) handle_event(msg Msg) {
 	// handle special batch and sequence messages
 	match msg {
 		NoopMsg {
+			return
+		}
+		ClearScreenMsg {
+			app.ui.clear_prev_data()
 			return
 		}
 		BatchMsg {
@@ -346,9 +356,17 @@ fn (mut app App) handle_event(msg Msg) {
 
 	// Handle the returned message immediately instead of deferring
 	match models_msg {
+		NoopMsg {
+			// Do nothing
+		}
 		BatchMsg {
 			app.exec_batch_msg(models_msg)
 		}
+		ClearScreenMsg {
+			app.ui.clear_prev_data()
+			return
+		}
+
 		SequenceMsg {
 			app.exec_sequence_msg(models_msg)
 		}
@@ -360,9 +378,6 @@ fn (mut app App) handle_event(msg Msg) {
 				window_width:  app.ui.window_width()
 				window_height: app.ui.window_height()
 			})
-		}
-		NoopMsg {
-			// Do nothing
 		}
 		else {
 			// For other messages, queue them for next frame

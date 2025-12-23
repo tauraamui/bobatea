@@ -221,6 +221,8 @@ fn (mut ctx ImmediateContext) clear() {
 	ctx.ref.clear()
 }
 
+fn (mut ctx ImmediateContext) clear_prev_data() {}
+
 fn (mut ctx ImmediateContext) flush() {
 	ctx.ref.flush()
 }

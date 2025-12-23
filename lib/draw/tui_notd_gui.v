@@ -121,6 +121,10 @@ fn (mut grid Grid) resize(width int, height int) ! {
 
 			cell := grid.data[old_index]
 
+			if cell.is_continuation {
+				continue
+			}
+
 			// Only check for multi-width character truncation if width has changed
 			if width_changed && !cell.is_continuation && cell.visual_width > 1 {
 				// Check if all continuation cells would fit in the new width
@@ -140,6 +144,7 @@ fn (mut grid Grid) resize(width int, height int) ! {
 }
 
 pub enum Style as u8 {
+	none
 	strikethrough
 }
 
@@ -148,6 +153,7 @@ fn (style Style) open() string {
 		.strikethrough {
 			'\x1b[9m'
 		}
+		.none { "" }
 	}
 }
 
@@ -156,6 +162,7 @@ fn (style Style) close() string {
 		.strikethrough {
 			'\x1b[29m'
 		}
+		.none { "" }
 	}
 }
 
@@ -166,6 +173,76 @@ struct Cell {
 	fg_color        ?Color
 	bg_color        ?Color
 	style           ?Style
+}
+
+fn (a Cell) == (b Cell) bool {
+	// if either cell has no data, they should only be equal if both have no data
+	// AND all other properties match exactly
+	a_has_data := if _ := a.data { true } else { false }
+	b_has_data := if _ := b.data { true } else { false }
+
+	if a_has_data != b_has_data {
+		return false
+	}
+
+	if a.data != b.data {
+		return false
+	}
+
+	// compare simple fields
+	if a.visual_width != b.visual_width || a.is_continuation != b.is_continuation {
+		return false
+	}
+
+	if a_fg_color := a.fg_color {
+		if b_fg_color := b.fg_color {
+			if a_fg_color != b_fg_color {
+				return false
+			}
+		} else {
+			// a has fg_color, b doesn't
+			return false
+		}
+	} else {
+		if b.fg_color != none {
+			// b has fg_color, a doesn't
+			return false
+		}
+	}
+
+	if a_bg_color := a.bg_color {
+		if b_bg_color := b.bg_color {
+			if a_bg_color != b_bg_color {
+				return false
+			}
+		} else {
+			// a has bg_color, b doesn't
+			return false
+		}
+	} else {
+		if b.bg_color != none {
+			// b has bg_color, a doesn't
+			return false
+		}
+	}
+
+	if a_style := a.style {
+		if b_style := b.style {
+			if a_style != b_style {
+				return false
+			}
+		} else {
+			// a has style, b doesn't
+			return false
+		}
+	} else {
+		if b.style != none {
+			// b has style, a doesn't
+			return false
+		}
+	}
+
+	return true
 }
 
 fn (cell Cell) str() string {
@@ -429,7 +506,6 @@ fn (mut ctx Context) write(c string) {
             }
         }
 
-
 		// Set the main cell with the character
 		ctx.data.set(x, y, Cell{
 			data:            c_char
@@ -537,6 +613,25 @@ fn (mut ctx Context) clear() {
 	ctx.clear_all_offsets()
 	ctx.clear_clip_area()
 	ctx.cursor_pos_set = false
+}
+
+fn (mut ctx Context) clear_prev_data() {
+	// Create a grid filled with cells that will never match real content
+	mut invalid_grid := Grid.new(ctx.data.width, ctx.data.height) or { return }
+
+	// Fill with cells that have invalid/unique properties
+	for i in 0 .. invalid_grid.data.len {
+		invalid_grid.data[i] = Cell{
+			data: `\0`  // null character that won't appear in real content
+			visual_width: -1  // invalid width
+			is_continuation: false
+			fg_color: Color{255, 0, 255}  // magenta - unlikely color
+			bg_color: Color{255, 0, 255}
+			style: .strikethrough  // unusual style
+		}
+	}
+
+	ctx.prev_data = invalid_grid
 }
 
 fn (mut ctx Context) draw_point(x int, y int) {
