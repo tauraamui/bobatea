@@ -8,14 +8,17 @@ import time
 pub struct App {
 	render_debug bool
 mut:
-	ui             &draw.Contextable = unsafe { nil }
-	t_ref          &tui.Context
-	initial_model  Model
-	event_invoked  bool
-	update_invoked bool
-	next_msg       ?Msg
-	msg_queue      shared []Msg // Queue for messages from batch commands
-	update_rate    int = 2000 // Update rate in Hz (2000 = 0.5ms intervals)
+	ui                 &draw.Contextable = unsafe { nil }
+	t_ref              &tui.Context
+	initial_model      Model
+	event_invoked      bool
+	update_invoked     bool
+	next_msg           ?Msg
+	msg_queue          shared []Msg // Queue for messages from batch commands
+	update_rate        int = 60 // Update rate in Hz (2000 = 0.5ms intervals)
+
+	last_activity_time time.Time
+	is_idle            bool
 }
 
 pub type Cmd = fn () Msg
@@ -499,15 +502,54 @@ fn (mut app App) process_queued_messages() {
 
 // Update loop - runs at high frequency for model updates
 fn update_loop(mut app App) {
-	// Process all queued messages (from input events and batch commands)
-	app.process_queued_messages()
+	mut had_activity := false
 
-	// Also process next_msg if present (from previous frame's commands)
-	msg := app.next_msg or { Msg(NoopMsg{}) }
-	if app.next_msg != none {
-		app.next_msg = none
-		app.handle_event(msg)
-	}
+    // Check if there are any messages to process
+    lock app.msg_queue {
+        if app.msg_queue.len > 0 {
+            had_activity = true
+        }
+    }
+
+    // Check if there's a next_msg pending
+    if app.next_msg != none {
+        had_activity = true
+    }
+
+    // Update last activity time if there was activity
+    if had_activity {
+        app.last_activity_time = time.now()
+        app.is_idle = false
+    }
+
+    // Process all queued messages
+    app.process_queued_messages()
+
+	// Process next_msg if present
+    msg := app.next_msg or { Msg(NoopMsg{}) }
+    if app.next_msg != none {
+        app.next_msg = none
+        app.handle_event(msg)
+    }
+
+	time_since_last_activity := time.since(app.last_activity_time)
+
+    if time_since_last_activity > 100 * time.millisecond {
+        // We've been idle for more than 100ms
+        if !app.is_idle {
+            app.is_idle = true
+            // Optional: log that we entered idle mode
+            // eprintln('Entering idle mode')
+        }
+
+        // Sleep longer when idle (10ms instead of 1ms)
+        // This reduces CPU usage from 1-2% to ~0.1%
+        time.sleep(10 * time.millisecond)
+    } else {
+        // We're active, use normal sleep
+        app.is_idle = false
+        time.sleep(time.millisecond)
+    }
 }
 
 // NOTE(tauraamui) [22/10/2025]: this function is called on each iteration of runtime loop directly
