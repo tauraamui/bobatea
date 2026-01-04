@@ -193,6 +193,11 @@ fn (mut ctx ImmediateContext) set_bg_color(c Color) {
 	ctx.ref.set_bg_color(tui.Color{ r: c.r, g: c.g, b: c.b })
 }
 
+fn (mut ctx ImmediateContext) set_default_fg_color(c Color) {
+	ctx.ref.set_color(tui.Color{ r: c.r, g: c.g, b: c.b })
+}
+
+
 fn (mut ctx ImmediateContext) set_default_bg_color(c Color) {
 	ctx.ref.set_bg_color(tui.Color{ r: c.r, g: c.g, b: c.b })
 }
@@ -203,6 +208,10 @@ fn (mut ctx ImmediateContext) reset_color() {
 
 fn (mut ctx ImmediateContext) reset_bg_color() {
 	ctx.ref.reset_bg_color()
+}
+
+fn (mut ctx ImmediateContext) reset_default_fg_color() {
+	ctx.ref.reset_color()
 }
 
 fn (mut ctx ImmediateContext) reset_default_bg_color() {

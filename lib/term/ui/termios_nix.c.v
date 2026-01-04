@@ -114,6 +114,9 @@ fn (mut ctx Context) termios_setup() ! {
 	}
 	ctx.window_height, ctx.window_width = get_terminal_size()
 
+	// disregard current host terminal themes for colors (bg/fg)
+	print('\x1b[0m')
+
 	// Reset console on exit
 	at_exit(restore_terminal_state) or {}
 	os.signal_opt(.tstp, restore_terminal_state_signal) or {}
@@ -308,7 +311,7 @@ fn (mut ctx Context) parse_events() {
 						break
 					}
 				}
-				
+
 				if split_pos > 0 {
 					// Process the prefix before the control character
 					e, len := multi_char(ctx.read_buf.bytestr()[..split_pos])
