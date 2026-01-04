@@ -50,6 +50,8 @@ mut:
 	set_bg_color(c Color)
 	set_default_fg_color(c Color)
 	set_default_bg_color(c Color)
+	get_default_fg_color() ?Color
+	get_default_bg_color() ?Color
 	reset_default_fg_color()
 	reset_default_bg_color()
 	reset_color()

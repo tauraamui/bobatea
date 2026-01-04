@@ -202,6 +202,14 @@ fn (mut ctx ImmediateContext) set_default_bg_color(c Color) {
 	ctx.ref.set_bg_color(tui.Color{ r: c.r, g: c.g, b: c.b })
 }
 
+fn (mut ctx ImmediateContext) get_default_fg_color() ?Color {
+	return none
+}
+
+fn (mut ctx ImmediateContext) get_default_bg_color() ?Color {
+	return none
+}
+
 fn (mut ctx ImmediateContext) reset_color() {
 	ctx.ref.reset_color()
 }

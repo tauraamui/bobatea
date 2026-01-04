@@ -590,6 +590,14 @@ fn (mut ctx Context) set_default_bg_color(c Color) {
 	ctx.default_bg_color = c
 }
 
+fn (mut ctx Context) get_default_fg_color() ?Color {
+	return ctx.default_fg_color
+}
+
+fn (mut ctx Context) get_default_bg_color() ?Color {
+	return ctx.default_bg_color
+}
+
 fn (mut ctx Context) reset_default_fg_color() {
 	ctx.default_fg_color = none
 }
