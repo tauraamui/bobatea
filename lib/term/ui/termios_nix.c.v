@@ -388,7 +388,15 @@ fn single_char(buf string) &Event {
 		// 65 ... 90 { event = Event{ ...event, code: KeyCode(32 | ch), modifiers: .shift } }
 		// The bit `or`s here are really just `+`'s, just written in this way for a tiny performance improvement
 		// don't treat tab, enter as ctrl+i, ctrl+j
-		1...8, 11...26 {
+		8 {
+			return &Event{
+				typ: .key_down
+				ascii: 127
+				code: .backspace
+				utf8: '\x7f'
+			}
+		}
+		1...7, 9, 11...26 {
 			event = &Event{
 				typ:       event.typ
 				ascii:     event.ascii
@@ -422,6 +430,16 @@ fn multi_char(buf string) (&Event, int) {
 		utf8:  buf
 	}
 
+	// handle backspace variants
+	if ch == 8 {
+		return &Event{
+			typ: .key_down
+			ascii: 127
+			code: .backspace
+			utf8: '\x7f'
+		}, 1
+	}
+
 	match ch {
 		// special handling for `ctrl + letter`
 		// TODO: Fix assoc in V and remove this workaround :/
@@ -429,7 +447,7 @@ fn multi_char(buf string) (&Event, int) {
 		// 65 ... 90 { event = Event{ ...event, code: KeyCode(32 | ch), modifiers: .shift } }
 		// The bit `or`s here are really just `+`'s, just written in this way for a tiny performance improvement
 		// don't treat tab, enter as ctrl+i, ctrl+j
-		1...8, 11...26 {
+		1...7, 9, 11...26 {
 			event = &Event{
 				typ:       event.typ
 				ascii:     event.ascii
