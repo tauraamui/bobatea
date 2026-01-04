@@ -23,6 +23,7 @@ pub struct Event {
 pub struct Config {
 pub:
 	render_debug     bool
+	default_fg_color ?Color
 	default_bg_color ?Color
 	user_data        voidptr
 	frame_fn         fn (voidptr) @[required]
@@ -47,7 +48,9 @@ pub interface Colorer {
 mut:
 	set_color(c Color)
 	set_bg_color(c Color)
+	set_default_fg_color(c Color)
 	set_default_bg_color(c Color)
+	reset_default_fg_color()
 	reset_default_bg_color()
 	reset_color()
 	reset_bg_color()
