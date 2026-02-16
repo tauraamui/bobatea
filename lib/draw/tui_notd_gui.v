@@ -259,7 +259,7 @@ enum CursorStyle as u8 {
 struct Context {
 	render_debug        bool
 mut:
-	stroke              rune = ` `
+	stroke              string = ` `.str()
 	default_fg_color    ?Color
 	default_bg_color    ?Color
 	ref                 NativeContext
@@ -539,7 +539,7 @@ fn (mut ctx Context) bold() {
 	ctx.bold = true
 }
 
-fn (mut ctx Context) set_stroke(s rune) {
+fn (mut ctx Context) set_stroke(s string) {
 	ctx.stroke = s
 }
 
@@ -668,7 +668,7 @@ fn apply_offsets(offsets []Offset, x int, y int) (int, int) {
 
 fn (mut ctx Context) draw_point(x int, y int) {
 	ctx.set_cursor_position(x, y)
-	ctx.write(ctx.stroke.str())
+	ctx.write(ctx.stroke)
 }
 
 fn (mut ctx Context) draw_text(x int, y int, text string) {
@@ -692,7 +692,7 @@ fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bo
 	if yy == yy2 {
 		// Horizontal line, performance improvement
 		ctx.set_cursor_position(min_x, min_y)
-		ctx.write(strings.repeat(ctx.stroke, max_x + 1 - min_x))
+		ctx.write(strings.repeat_string(ctx.stroke, max_x + 1 - min_x))
 		return
 	}
 	// Draw the various points with Bresenham's line algorithm:
