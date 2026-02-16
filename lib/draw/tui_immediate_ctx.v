@@ -177,6 +177,10 @@ fn (mut ctx ImmediateContext) draw_point(x int, y int) {
 	ctx.ref.draw_point(x, y)
 }
 
+fn (mut ctx ImmediateContext) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
+	ctx.ref.draw_line(x, y, x2, y2)
+}
+
 fn (mut ctx ImmediateContext) bold() {
 	ctx.ref.bold()
 }

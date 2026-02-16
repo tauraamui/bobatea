@@ -42,6 +42,7 @@ mut:
 	write(c string)
 	draw_rect(x int, y int, width int, height int)
 	draw_point(x int, y int)
+	draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bool)
 }
 
 pub interface Colorer {
