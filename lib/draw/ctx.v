@@ -38,6 +38,7 @@ pub type Runner = fn () !
 
 pub interface Drawer {
 mut:
+	set_stroke(s rune)
 	draw_text(x int, y int, text string)
 	write(c string)
 	draw_rect(x int, y int, width int, height int)
