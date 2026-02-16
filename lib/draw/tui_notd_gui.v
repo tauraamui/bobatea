@@ -651,6 +651,16 @@ fn (mut ctx Context) clear_prev_data() {
 	ctx.prev_data = invalid_grid
 }
 
+fn apply_offsets(offsets []Offset, x int, y int) (int, int) {
+	mut xx := x
+	mut yy := y
+	for o in offsets {
+		xx += o.x
+		yy += o.y
+	}
+	return xx, yy
+}
+
 fn (mut ctx Context) draw_point(x int, y int) {
 	ctx.set_cursor_position(x, y)
 	ctx.write(' ')
