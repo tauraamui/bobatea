@@ -626,11 +626,11 @@ fn (mut ctx Context) reset() {
 }
 
 fn (mut ctx Context) clear() {
-	mut new_data := []Cell{len: ctx.window_width() * ctx.window_height()}
-	for i in 0 .. new_data.len {
-		new_data[i] = Cell{}
+	// Zero cells in-place to avoid a heap allocation every frame.
+	// flush() handles resizing if window dimensions have changed.
+	for i in 0 .. ctx.data.data.len {
+		ctx.data.data[i] = Cell{}
 	}
-	ctx.data.data = new_data
 	// Clear all transient frame state
 	ctx.clear_all_offsets()
 	ctx.clear_clip_area()
@@ -784,8 +784,6 @@ fn (mut ctx Context) run() ! {
 }
 
 fn (mut ctx Context) flush() {
-	defer { ctx.prev_data = ctx.data.clone() }
-
 	new_width := ctx.window_width()
 	new_height := ctx.window_height()
 
@@ -802,16 +800,37 @@ fn (mut ctx Context) flush() {
 
 	ctx.data.resize(new_width, new_height) or { panic('flush failed to resize grid -> ${err}') }
 	ctx.ref.hide_cursor()
+
+	// Hoist the prev_data optional check and same-size test outside the render loop.
+	// This avoids re-checking the ?Grid option and the width/height equality on every cell.
+	// prev_data_slice is a copy of the slice header pointing at the previous frame's cells.
+	mut prev_data_slice := []Cell{}
+	mut can_diff := false
+	if prev_grid := ctx.prev_data {
+		if prev_grid.width == ctx.data.width && prev_grid.height == ctx.data.height {
+			// Shallow copy of the slice header (same pointer, no data copy).
+			// prev_data_slice is only read inside the loop below, never written to.
+			unsafe { prev_data_slice = prev_grid.data }
+			can_diff = true
+		}
+	}
+
 	mut style := ?Style(none)
 	for y in 0 .. ctx.data.height {
 		for x in 0 .. ctx.data.width {
-			cell := ctx.data.get(x, y) or { Cell{} }
+			// Direct array indexing avoids the bounds-check + error-boxing of Grid.get().
+			index := y * ctx.data.width + x
+			cell := ctx.data.data[index]
 
 			// Skip continuation cells for multi-width characters
 			if cell.is_continuation {
 				continue
 			}
 
+			// Style writes happen for every non-continuation cell, even unchanged ones.
+			// This keeps the terminal's streaming style state consistent across frames:
+			// a close(S) is always written when transitioning away from style S, so
+			// styles from previous frames never bleed into subsequent renders.
 			if prev_style := style {
 				ctx.ref.write(prev_style.close())
 			}
@@ -820,16 +839,10 @@ fn (mut ctx Context) flush() {
 			}
 			style = cell.style
 
-			if prev_grid := ctx.prev_data {
-				// Only skip rendering if the previous grid had the same dimensions
-				// and the cell at this position is identical
-				if prev_grid.width == ctx.data.width && prev_grid.height == ctx.data.height {
-					if prev_cell := prev_grid.get(x, y) {
-						if prev_cell == cell {
-							continue
-						}
-					}
-				}
+			// Diff check after style writes: skip only the character render and
+			// cursor positioning for unchanged cells.
+			if can_diff && prev_data_slice[index] == cell {
+				continue
 			}
 
 			ctx.ref.set_cursor_position(x + 1, y + 1)
@@ -871,4 +884,23 @@ fn (mut ctx Context) flush() {
 		}
 	}
 	ctx.ref.flush()
+
+	// Update prev_data for next frame's diff.
+	// When dimensions match, swap the slice headers (O(1)) instead of cloning (O(n) + heap alloc).
+	// next frame's clear() will zero the buffer that ends up in ctx.data.data.
+	if prev_grid := ctx.prev_data {
+		if prev_grid.width == ctx.data.width && prev_grid.height == ctx.data.height {
+			// Swap slice headers: ctx.data.data gets the old prev buffer (to be zeroed by
+			// clear() next frame), and ctx.prev_data.data gets this frame's cells.
+			// All three assignments are shallow slice-header copies; no data is allocated.
+			mut swapped_prev := prev_grid
+			unsafe { swapped_prev.data = ctx.data.data }
+			unsafe { ctx.data.data = prev_grid.data }
+			ctx.prev_data = swapped_prev
+		} else {
+			ctx.prev_data = ctx.data.clone()
+		}
+	} else {
+		ctx.prev_data = ctx.data.clone()
+	}
 }
