@@ -18,7 +18,6 @@
 module draw
 
 import lib.term.ui as tui
-import strings
 import arrays
 
 struct Pos {
@@ -246,8 +245,8 @@ fn (a Cell) == (b Cell) bool {
 }
 
 fn (cell Cell) str() string {
-	r := cell.data or { return [` `].string() }
-	return [r].string()
+	r := cell.data or { return ' ' }
+	return r.str()
 }
 
 enum CursorStyle as u8 {
@@ -679,10 +678,12 @@ fn (mut ctx Context) draw_text(x int, y int, text string) {
 }
 
 fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
-	xx, yy := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x,
-		y)
-	xx2, yy2 := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} },
-		x2, y2)
+	xx, yy := if do_apply_offsets { apply_offsets(ctx.offsets, x, y) } else { x, y }
+	xx2, yy2 := if do_apply_offsets {
+		apply_offsets(ctx.offsets, x2, y2)
+	} else {
+		x2, y2
+	}
 
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L139
@@ -690,9 +691,11 @@ fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bo
 	min_x, min_y := if xx < xx2 { xx } else { xx2 }, if yy < yy2 { yy } else { yy2 }
 	max_x, _ := if xx > xx2 { xx } else { xx2 }, if yy > yy2 { yy } else { yy2 }
 	if yy == yy2 {
-		// Horizontal line, performance improvement
-		ctx.set_cursor_position(min_x, min_y)
-		ctx.write(strings.repeat_string(ctx.stroke, max_x + 1 - min_x))
+		// Horizontal line: write stroke directly per-cell to avoid
+		// allocating a repeat_string that gets immediately decomposed.
+		for xi in min_x .. max_x + 1 {
+			ctx.draw_point(xi, min_y)
+		}
 		return
 	}
 	// Draw the various points with Bresenham's line algorithm:
@@ -723,10 +726,12 @@ fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bo
 }
 
 fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
-	xx, yy := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} }, x,
-		y)
-	xx2, yy2 := apply_offsets(if do_apply_offsets { ctx.offsets } else { []Offset{} },
-		x2, y2)
+	xx, yy := if do_apply_offsets { apply_offsets(ctx.offsets, x, y) } else { x, y }
+	xx2, yy2 := if do_apply_offsets {
+		apply_offsets(ctx.offsets, x2, y2)
+	} else {
+		x2, y2
+	}
 	// **** CODE BELOW is MIT LICENSED ****
 	// see https://github.com/vlang/v/blob/9dc69ef2aad8c8991fa740d10087ff36ffc58279/vlib/term/ui/ui.c.v#L175
 	// ===== BLOCK START =====
