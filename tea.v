@@ -19,6 +19,7 @@ mut:
 
 	last_activity_time time.Time
 	is_idle            bool
+	needs_render       bool = true
 }
 
 pub type Cmd = fn () Msg
@@ -350,6 +351,7 @@ fn (mut app App) handle_event(msg Msg) {
 
 	m, cmd := app.initial_model.update(msg)
 	app.initial_model = m
+	app.needs_render = true
 	u_cmd := cmd or { noop_cmd }
 	models_msg := u_cmd()
 	if models_msg is QuitMsg {
@@ -555,6 +557,10 @@ fn update_loop(mut app App) {
 // NOTE(tauraamui) [22/10/2025]: this function is called on each iteration of runtime loop directly
 //                               we now only handle rendering here, update logic moved to update_loop
 fn frame(mut app App) {
+	if !app.needs_render {
+		return
+	}
+	app.needs_render = false
 	app.ui.clear()
 	app.ui.hide_cursor() // make it default, should think harder about this
 	// when it comes time to implement dynamic input fields etc.,
