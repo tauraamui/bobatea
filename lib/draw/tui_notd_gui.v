@@ -625,6 +625,11 @@ fn (mut ctx Context) reset() {
 }
 
 fn (mut ctx Context) clear() {
+	// Ensure grid matches current terminal dimensions before drawing.
+	// Without this, the first frame after init renders into a fallback-sized
+	// grid (100x100) while view() positions content using real terminal
+	// dimensions, causing centered content to be silently dropped.
+	ctx.data.resize(ctx.window_width(), ctx.window_height()) or {}
 	// Zero cells in-place to avoid a heap allocation every frame.
 	// flush() handles resizing if window dimensions have changed.
 	for i in 0 .. ctx.data.data.len {
