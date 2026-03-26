@@ -827,6 +827,21 @@ fn (mut ctx Context) run() ! {
 	return ctx.ref.run()
 }
 
+// opt_color_eq compares two optional Colors without relying on generated
+// optional-equality code, which V cannot produce for types with custom == operators.
+fn opt_color_eq(a ?Color, b ?Color) bool {
+	if ca := a {
+		if cb := b {
+			return ca == cb
+		}
+		return false
+	}
+	if _ := b {
+		return false
+	}
+	return true
+}
+
 fn (mut ctx Context) flush() {
 	new_width := ctx.window_width()
 	new_height := ctx.window_height()
@@ -859,59 +874,107 @@ fn (mut ctx Context) flush() {
 		}
 	}
 
-	mut style := ?Style(none)
+	// Track the terminal's current rendering state across cell writes so we only
+	// emit escape sequences when something actually changes.  We reset everything
+	// at the end of the frame so the next frame always starts from a known baseline.
+	mut term_fg := ?Color(none)
+	mut term_bg := ?Color(none)
+	mut term_style := ?Style(none)
+	// Expected cursor column after the last write.  -1 means position is unknown.
+	mut cursor_x := -1
+	mut cursor_y := -1
+
 	for y in 0 .. ctx.data.height {
 		for x in 0 .. ctx.data.width {
 			// Direct array indexing avoids the bounds-check + error-boxing of Grid.get().
 			index := y * ctx.data.width + x
 			cell := ctx.data.data[index]
 
-			// Skip continuation cells for multi-width characters
+			// Continuation cells occupy screen space but carry no glyph.
 			if cell.is_continuation {
 				continue
 			}
 
-			// Style writes happen for every non-continuation cell, even unchanged ones.
-			// This keeps the terminal's streaming style state consistent across frames:
-			// a close(S) is always written when transitioning away from style S, so
-			// styles from previous frames never bleed into subsequent renders.
-			if prev_style := style {
-				ctx.ref.write(prev_style.close())
-			}
-			if cell_style := cell.style {
-				ctx.ref.write(cell_style.open())
-			}
-			style = cell.style
-
-			// Diff check after style writes: skip only the character render and
-			// cursor positioning for unchanged cells.
+			// Skip unchanged cells entirely — no cursor move, no style, no color output.
+			// Breaking cursor continuity here is fine: the next changed cell will
+			// reposition explicitly.
 			if can_diff && prev_data_slice[index] == cell {
+				cursor_x = -1
 				continue
 			}
 
-			ctx.ref.set_cursor_position(x + 1, y + 1)
-			if c := cell.fg_color {
-				ctx.ref.set_color(tui.Color{c.r, c.g, c.b})
-			} else {
-				if default_fg_color := ctx.default_fg_color {
-					c := default_fg_color
-					ctx.ref.set_color(tui.Color{c.r, c.g, c.b})
-				}
+			// Only emit a cursor-position sequence when the cursor is not already
+			// sitting at (x, y) from a previous consecutive write.
+			if cursor_x != x || cursor_y != y {
+				ctx.ref.set_cursor_position(x + 1, y + 1)
+				cursor_x = x
+				cursor_y = y
 			}
-			if c := cell.bg_color {
-				ctx.ref.set_bg_color(tui.Color{c.r, c.g, c.b})
-			} else {
-				if default_bg_color := ctx.default_bg_color {
-					c := default_bg_color
-					ctx.ref.set_bg_color(tui.Color{c.r, c.g, c.b})
+
+			// Emit a style change only when it differs from the tracked terminal style.
+			if cell.style != term_style {
+				if prev_style := term_style {
+					ctx.ref.write(prev_style.close())
 				}
+				if new_style := cell.style {
+					ctx.ref.write(new_style.open())
+				}
+				term_style = cell.style
+			}
+
+			// Resolve the desired fg/bg colors (cell-level overrides context defaults).
+			want_fg := if c := cell.fg_color {
+				?Color(c)
+			} else if c := ctx.default_fg_color {
+				?Color(c)
+			} else {
+				?Color(none)
+			}
+			want_bg := if c := cell.bg_color {
+				?Color(c)
+			} else if c := ctx.default_bg_color {
+				?Color(c)
+			} else {
+				?Color(none)
+			}
+
+			// Emit color sequences only when they differ from the tracked terminal state.
+			if !opt_color_eq(want_fg, term_fg) {
+				if c := want_fg {
+					ctx.ref.set_color(tui.Color{c.r, c.g, c.b})
+				} else {
+					ctx.ref.reset_color()
+				}
+				term_fg = want_fg
+			}
+			if !opt_color_eq(want_bg, term_bg) {
+				if c := want_bg {
+					ctx.ref.set_bg_color(tui.Color{c.r, c.g, c.b})
+				} else {
+					ctx.ref.reset_bg_color()
+				}
+				term_bg = want_bg
 			}
 
 			ctx.ref.write(cell.str())
-			ctx.ref.reset_bg_color()
-			ctx.ref.reset_color()
+
+			// Advance the tracked cursor by the glyph's visual width so consecutive
+			// changed cells on the same row skip the next set_cursor_position.
+			cursor_x += cell.visual_width
 		}
 	}
+
+	// Reset any terminal state set during the frame so the next frame begins clean.
+	if s := term_style {
+		ctx.ref.write(s.close())
+	}
+	if _ := term_fg {
+		ctx.ref.reset_color()
+	}
+	if _ := term_bg {
+		ctx.ref.reset_bg_color()
+	}
+
 	ctx.ref.set_cursor_position(ctx.cursor_pos.x, ctx.cursor_pos.y)
 	if ctx.hide_cursor == false {
 		ctx.ref.show_cursor()
