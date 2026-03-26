@@ -145,12 +145,16 @@ fn (mut grid Grid) resize(width int, height int) ! {
 pub enum Style as u8 {
 	none
 	strikethrough
+	underline
 }
 
 fn (style Style) open() string {
 	return match style {
 		.strikethrough {
 			'\x1b[9m'
+		}
+		.underline {
+			'\x1b[4m'
 		}
 		.none { "" }
 	}
@@ -160,6 +164,9 @@ fn (style Style) close() string {
 	return match style {
 		.strikethrough {
 			'\x1b[29m'
+		}
+		.underline {
+			'\x1b[24m'
 		}
 		.none { "" }
 	}
