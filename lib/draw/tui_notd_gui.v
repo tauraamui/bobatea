@@ -515,24 +515,40 @@ fn (mut ctx Context) write(c string) {
             }
         }
 
+		// When no explicit bg color is set, preserve the existing cell's
+		// bg color (e.g. from a prior draw_rect call).
+		resolved_bg := if _ := ctx.bg_color {
+			ctx.bg_color
+		} else {
+			existing := ctx.data.get(x, y) or { Cell{} }
+			existing.bg_color
+		}
+
 		// Set the main cell with the character
 		ctx.data.set(x, y, Cell{
 			data:            c_char
 			visual_width:    width
 			is_continuation: false
 			fg_color:        ctx.fg_color
-			bg_color:        ctx.bg_color
+			bg_color:        resolved_bg
 			style:           ctx.style
 		}) or { break }
 
 		// Mark continuation cells for multi-width characters
 		for i in 1 .. width {
-			ctx.data.set(cursor_pos.x + x_offset + i, cursor_pos.y, Cell{
+			cont_x := cursor_pos.x + x_offset + i
+			cont_bg := if _ := ctx.bg_color {
+				ctx.bg_color
+			} else {
+				existing := ctx.data.get(cont_x, cursor_pos.y) or { Cell{} }
+				existing.bg_color
+			}
+			ctx.data.set(cont_x, cursor_pos.y, Cell{
 				data:            none
 				visual_width:    0
 				is_continuation: true
 				fg_color:        ctx.fg_color
-				bg_color:        ctx.bg_color
+				bg_color:        cont_bg
 				style:           ctx.style
 			}) or { break }
 		}
@@ -775,6 +791,17 @@ fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int, do_apply_off
 		i++
 	}
 	// ===== BLOCK END =====
+}
+
+fn (mut ctx Context) clear_area(x int, y int, width int, height int) {
+	xx, yy := apply_offsets(ctx.offsets, x, y)
+	max_x := xx + width
+	max_y := yy + height
+	for cy in yy .. max_y {
+		for cx in xx .. max_x {
+			ctx.data.set(cx, cy, Cell{}) or { continue }
+		}
+	}
 }
 
 fn (mut ctx Context) draw_rect(x int, y int, width int, height int) {

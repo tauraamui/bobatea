@@ -105,6 +105,8 @@ fn (mut ctx Context) draw_text(x int, y int, text string) {
 
 fn (mut ctx Context) write(c string) {}
 
+fn (mut ctx Context) clear_area(x int, y int, width int, height int) {}
+
 fn (mut ctx Context) draw_rect(x int, y int, width int, height int) {
 	c := ctx.background_color
 	ctx.gg.draw_rect_filled(x, y - 100, width, height / 16, gx.rgb(c.r, c.g, c.b))
