@@ -40,25 +40,33 @@ pub fn init(cfg Config) &Context {
 	mut ctx := &Context{
 		cfg: cfg
 	}
+
+	ctx_ptr = ctx
+	return ctx
+}
+
+// console_setup performs the full Windows console setup. Called from run()
+// to ensure setup happens exactly once.
+fn (mut ctx Context) console_setup() ! {
 	// get the standard input handle
 	stdin_handle := C.GetStdHandle(C.STD_INPUT_HANDLE)
 	stdout_handle := C.GetStdHandle(C.STD_OUTPUT_HANDLE)
 	if stdin_handle == C.INVALID_HANDLE_VALUE {
-		panic('could not get stdin handle')
+		return error('could not get stdin handle')
 	}
 	// save the current input mode, to be restored on exit
 	if !C.GetConsoleMode(stdin_handle, &stdin_at_startup) {
-		panic('could not get stdin console mode')
+		return error('could not get stdin console mode')
 	}
 
 	// enable extended input flags (see https://stackoverflow.com/a/46802726)
 	// 0x80 == C.ENABLE_EXTENDED_FLAGS
 	if !C.SetConsoleMode(stdin_handle, 0x80) {
-		panic('could not set raw input mode')
+		return error('could not set raw input mode')
 	}
 	// enable window and mouse input events.
 	if !C.SetConsoleMode(stdin_handle, C.ENABLE_WINDOW_INPUT | C.ENABLE_MOUSE_INPUT | 0x0010) {
-		panic('could not set raw input mode')
+		return error('could not set raw input mode')
 	}
 	// store the current title, so restore_terminal_state can get it back
 	save_title()
@@ -81,7 +89,6 @@ pub fn init(cfg Config) &Context {
 		flush_stdout()
 	}
 
-	ctx_ptr = ctx
 	at_exit(restore_terminal_state) or {}
 	for code in ctx.cfg.reset {
 		os.signal_opt(code, fn (_ os.Signal) {
@@ -95,7 +102,6 @@ pub fn init(cfg Config) &Context {
 
 	ctx.stdin_handle = stdin_handle
 	ctx.stdout_handle = stdout_handle
-	return ctx
 }
 
 // Update loop - runs at high frequency for application logic updates
@@ -145,8 +151,10 @@ fn (mut ctx Context) render_loop() {
 	}
 }
 
-// run starts the windows console or restarts if it was paused.
+// run sets up and starts the windows console.
 pub fn (mut ctx Context) run() ! {
+	ctx.console_setup()!
+
 	// Start input loop in a separate thread
 	spawn ctx.input_loop()
 

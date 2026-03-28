@@ -1,6 +1,5 @@
 module bobatea
 
-import lib.term.ui as tui
 import lib.draw
 import time
 
@@ -9,7 +8,6 @@ pub struct App {
 	render_debug bool
 mut:
 	ui                 &draw.Contextable = unsafe { nil }
-	t_ref              &tui.Context
 	initial_model      Model
 	event_invoked      bool
 	update_invoked     bool
@@ -571,7 +569,6 @@ fn frame(mut app App) {
 
 pub fn new_program(mut m Model) App {
 	return App{
-		t_ref:         tui.init(tui.Config{})
 		initial_model: m
 	}
 }
