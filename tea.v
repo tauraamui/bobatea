@@ -7,7 +7,7 @@ import time
 pub struct App {
 	render_debug bool
 mut:
-	ui                 &draw.Contextable = unsafe { nil }
+	ui                 &Context = unsafe { nil }
 	initial_model      Model
 	event_invoked      bool
 	update_invoked     bool
@@ -251,7 +251,7 @@ pub fn (mut app App) run() ! {
 		capture_events:       true
 		use_alternate_buffer: true
 	)
-	app.ui = ctx
+	app.ui = &Context(ctx)
 
 	cmd := app.initial_model.init() or { noop_cmd }
 	models_msg := cmd()
