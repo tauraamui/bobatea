@@ -162,10 +162,13 @@ fn get_cursor_position() (int, int) {
 	unsafe {
 		buf := malloc_noscan(25)
 		len := C.read(C.STDIN_FILENO, buf, 24)
+		if len <= 0 {
+			return -1, -1
+		}
 		buf[len] = 0
 		s = tos(buf, len)
 	}
-	if s.len == 0 {
+	if s.len < 3 {
 		return -1, -1
 	}
 	a := s[2..].split(';')
@@ -190,6 +193,9 @@ fn supports_truecolor() bool {
 	unsafe {
 		buf := malloc_noscan(25)
 		len := C.read(C.STDIN_FILENO, buf, 24)
+		if len <= 0 {
+			return false
+		}
 		buf[len] = 0
 		s = tos(buf, len)
 	}
