@@ -30,7 +30,7 @@ mut:
 	text_draws_since_last_pass int
 }
 
-pub fn new_context(cfg Config) (&Contextable, Runner) {
+pub fn new_context(cfg Config) (&Context, Runner) {
 	mut ctx := &Context{
 		user_data: cfg.user_data
 		frame_cb:  cfg.frame_fn

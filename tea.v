@@ -477,20 +477,25 @@ fn (mut app App) send(msg Msg) {
 	}
 }
 
+fn (mut app App) dequeue_msg() ?Msg {
+	lock app.msg_queue {
+		if app.msg_queue.len > 0 {
+			msg := app.msg_queue[0]
+			if app.msg_queue.len == 1 {
+				app.msg_queue.clear()
+			} else {
+				app.msg_queue = app.msg_queue[1..]
+			}
+			return msg
+		}
+	}
+	return none
+}
+
 // process_queued_messages processes all messages in the queue
 fn (mut app App) process_queued_messages() {
 	for {
-		mut msg_to_process := ?Msg(none)
-		lock app.msg_queue {
-			if app.msg_queue.len > 0 {
-				msg_to_process = app.msg_queue[0]
-				if app.msg_queue.len == 1 {
-					app.msg_queue.clear()
-				} else {
-					app.msg_queue = app.msg_queue[1..]
-				}
-			}
-		}
+		msg_to_process := app.dequeue_msg()
 
 		if msg := msg_to_process {
 			app.handle_event(msg)

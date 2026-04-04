@@ -352,8 +352,8 @@ mut:
 
 type Runner = fn () !
 
-pub fn new_context(cfg Config) (&Contextable, Runner) {
-	mut ctx := Context{
+pub fn new_context(cfg Config) (&Context, Runner) {
+	mut ctx := &Context{
 		render_debug:     cfg.render_debug
 		default_fg_color: cfg.default_fg_color
 		default_bg_color: cfg.default_bg_color
