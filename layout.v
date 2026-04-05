@@ -1,7 +1,5 @@
 module bobatea
 
-import lib.draw
-
 pub enum Alignment {
 	start
 	center
@@ -32,9 +30,9 @@ pub:
 	height       int
 	padding      Padding
 	border       BorderStyle = .none
-	border_color ?draw.Color
-	bg_color     ?draw.Color
-	fg_color     ?draw.Color
+	border_color ?Color
+	bg_color     ?Color
+	fg_color     ?Color
 }
 
 pub fn (l Layout) render(mut ctx Context, content_fn fn (mut Context)) {
@@ -251,21 +249,21 @@ pub fn (l Layout) border(style BorderStyle) Layout {
 	}
 }
 
-pub fn (l Layout) border_color(color draw.Color) Layout {
+pub fn (l Layout) border_color(color Color) Layout {
 	return Layout{
 		...l
 		border_color: color
 	}
 }
 
-pub fn (l Layout) background(color draw.Color) Layout {
+pub fn (l Layout) background(color Color) Layout {
 	return Layout{
 		...l
 		bg_color: color
 	}
 }
 
-pub fn (l Layout) foreground(color draw.Color) Layout {
+pub fn (l Layout) foreground(color Color) Layout {
 	return Layout{
 		...l
 		fg_color: color

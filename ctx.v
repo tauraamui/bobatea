@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module draw
+module bobatea
 
 import lib.term.ui as tui
 
@@ -33,8 +33,6 @@ pub:
 	capture_events       bool
 	use_alternate_buffer bool = true
 }
-
-pub type Runner = fn () !
 
 pub interface Drawer {
 mut:
@@ -80,7 +78,7 @@ pub interface Renderer {
 	WindowSizer
 }
 
-pub interface Contextable {
+pub interface Context {
 	Renderer
 mut:
 	render_debug() bool

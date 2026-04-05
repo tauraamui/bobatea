@@ -1,7 +1,6 @@
 module bobatea
 
 import lib.term.ui as tui
-import lib.draw
 
 pub fn visible_len(s string) int {
 	return utf8_str_visible_length(s)
@@ -66,7 +65,7 @@ const special_keycodes = [
 	.f24,
 ]
 
-fn resolve_key_msg(e draw.Event) KeyMsg {
+fn resolve_key_msg(e Event) KeyMsg {
 	// if modifiers is either ctrl or shift then the only character rep field we want to pay attention to
 	// is `code`.
 	prefix := if e.modifiers.has(.ctrl) { 'ctrl+' } else { '' }

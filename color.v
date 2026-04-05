@@ -1,4 +1,4 @@
-module draw
+module bobatea
 
 import lib.term.ui as tui
 
@@ -31,4 +31,3 @@ fn ansi2rgb(ansi_color int) (u8, u8, u8) {
 fn (a Color) == (b Color) bool {
 	return (a.r == b.r && a.g == b.g && a.b == b.b)
 }
-
