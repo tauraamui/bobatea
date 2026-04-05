@@ -6,7 +6,7 @@ import time
 pub struct App {
 	render_debug bool
 mut:
-	ui                 &Contextable = unsafe { nil }
+	ui                 &Context = unsafe { nil }
 	initial_model      Model
 	event_invoked      bool
 	update_invoked     bool
@@ -34,7 +34,7 @@ pub interface Model {
 mut:
 	init() Cmd
 	update(Msg) (Model, Cmd)
-	view(mut Contextable)
+	view(mut Context)
 	clone() Model
 }
 

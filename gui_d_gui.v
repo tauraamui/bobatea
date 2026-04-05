@@ -30,7 +30,7 @@ mut:
 	text_draws_since_last_pass int
 }
 
-pub fn new_context(cfg Config) (&Contextable, fn () !) {
+pub fn new_context(cfg Config) (&Context, fn () !) {
 	mut ctx := &GUIContext{
 		user_data: cfg.user_data
 		frame_cb:  cfg.frame_fn

@@ -351,7 +351,7 @@ mut:
 	run() !
 }
 
-pub fn new_context(cfg Config) (&Contextable, fn () !) {
+pub fn new_context(cfg Config) (&Context, fn () !) {
 	mut ctx := TUIContext{
 		render_debug:     cfg.render_debug
 		default_fg_color: cfg.default_fg_color

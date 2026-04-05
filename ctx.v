@@ -78,7 +78,7 @@ pub interface Renderer {
 	WindowSizer
 }
 
-pub interface Contextable {
+pub interface Context {
 	Renderer
 mut:
 	render_debug() bool
@@ -102,6 +102,3 @@ mut:
 	flush()
 	clear_prev_data()
 }
-
-// Context is an alias for Contextable, the public drawing context interface.
-pub type Context = Contextable
