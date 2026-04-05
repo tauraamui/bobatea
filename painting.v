@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module draw
+module bobatea
 
 pub fn paint_shape_text(mut ctx Contextable, x int, y int, color Color, text string) {
 	ctx.set_color(r: color.r, g: color.g, b: color.b)

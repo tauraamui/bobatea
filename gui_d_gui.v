@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module draw
+module bobatea
 
 import gg
 import gx
 import math
 import os
 
-struct Context {
+struct GUIContext {
 	user_data voidptr
 	frame_cb  fn (v voidptr) @[required]
 mut:
@@ -30,8 +30,8 @@ mut:
 	text_draws_since_last_pass int
 }
 
-pub fn new_context(cfg Config) (&Contextable, Runner) {
-	mut ctx := &Context{
+pub fn new_context(cfg Config) (&Contextable, fn () !) {
+	mut ctx := &GUIContext{
 		user_data: cfg.user_data
 		frame_cb:  cfg.frame_fn
 	}
@@ -50,15 +50,15 @@ pub fn new_context(cfg Config) (&Contextable, Runner) {
 
 const font_size = 16
 
-fn (mut ctx Context) run_wrapper() ! {
+fn (mut ctx GUIContext) run_wrapper() ! {
 	ctx.gg.run()
 }
 
-fn (mut ctx Context) render_debug() bool {
+fn (mut ctx GUIContext) render_debug() bool {
 	return true
 }
 
-fn frame(mut ctx Context) {
+fn frame(mut ctx GUIContext) {
 	width := gg.window_size().width
 	mut scale_factor := gg.dpi_scale()
 	if scale_factor <= 0 {
@@ -74,21 +74,21 @@ fn frame(mut ctx Context) {
 	}
 }
 
-fn (mut ctx Context) rate_limit_draws() bool {
+fn (mut ctx GUIContext) rate_limit_draws() bool {
 	return false
 }
 
-fn (mut ctx Context) window_width() int {
+fn (mut ctx GUIContext) window_width() int {
 	return gg.window_size().width
 }
 
-fn (mut ctx Context) window_height() int {
+fn (mut ctx GUIContext) window_height() int {
 	return gg.window_size().height
 }
 
-fn (mut ctx Context) set_cursor_position(x int, y int) {}
+fn (mut ctx GUIContext) set_cursor_position(x int, y int) {}
 
-fn (mut ctx Context) draw_text(x int, y int, text string) {
+fn (mut ctx GUIContext) draw_text(x int, y int, text string) {
 	// this offsetting stuff is a bit mental but seems to be correct
 	if ctx.text_draws_since_last_pass == 0 {
 		ctx.gg.begin()
@@ -103,45 +103,45 @@ fn (mut ctx Context) draw_text(x int, y int, text string) {
 	ctx.text_draws_since_last_pass += 1
 }
 
-fn (mut ctx Context) write(c string) {}
+fn (mut ctx GUIContext) write(c string) {}
 
-fn (mut ctx Context) clear_area(x int, y int, width int, height int) {}
+fn (mut ctx GUIContext) clear_area(x int, y int, width int, height int) {}
 
-fn (mut ctx Context) draw_rect(x int, y int, width int, height int) {
+fn (mut ctx GUIContext) draw_rect(x int, y int, width int, height int) {
 	c := ctx.background_color
 	ctx.gg.draw_rect_filled(x, y - 100, width, height / 16, gx.rgb(c.r, c.g, c.b))
 }
 
-fn (mut ctx Context) draw_point(x int, y int) {}
+fn (mut ctx GUIContext) draw_point(x int, y int) {}
 
-fn (mut ctx Context) bold() {}
+fn (mut ctx GUIContext) bold() {}
 
-fn (mut ctx Context) set_color(c Color) {
+fn (mut ctx GUIContext) set_color(c Color) {
 	ctx.foreground_color = c
 }
 
-fn (mut ctx Context) set_bg_color(c Color) {
+fn (mut ctx GUIContext) set_bg_color(c Color) {
 	ctx.background_color = c
 }
 
-fn (mut ctx Context) reset_color() {
+fn (mut ctx GUIContext) reset_color() {
 	ctx.foreground_color = Color{}
 }
 
-fn (mut ctx Context) reset_bg_color() {}
+fn (mut ctx GUIContext) reset_bg_color() {}
 
-fn (mut ctx Context) reset() {
+fn (mut ctx GUIContext) reset() {
 	ctx.foreground_color = Color{}
 	ctx.background_color = Color{}
 }
 
-fn (mut ctx Context) run() ! {
+fn (mut ctx GUIContext) run() ! {
 	ctx.gg.run()
 }
 
-fn (mut ctx Context) clear() {
+fn (mut ctx GUIContext) clear() {
 	ctx.gg.begin()
 	ctx.gg.end()
 }
 
-fn (mut ctx Context) flush() {}
+fn (mut ctx GUIContext) flush() {}

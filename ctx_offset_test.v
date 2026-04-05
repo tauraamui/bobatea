@@ -1,7 +1,7 @@
-module draw
+module bobatea
 
 fn test_context_offset_push_affects_apply() {
-	mut t_ctx := Context{
+	mut t_ctx := TUIContext{
 		ref: unsafe { nil }
 	}
 	t_ctx.setup_grid()!
@@ -18,7 +18,7 @@ fn test_context_offset_push_affects_apply() {
 }
 
 fn test_context_sequential_offset_last_on_first_off() {
-	mut t_ctx := Context{
+	mut t_ctx := TUIContext{
 		ref: unsafe { nil }
 	}
 	t_ctx.setup_grid()!
@@ -77,7 +77,7 @@ fn test_context_sequential_offset_last_on_first_off() {
 }
 
 fn test_context_offset_clear_from_offset() {
-	mut t_ctx := Context{
+	mut t_ctx := TUIContext{
 		ref: unsafe { nil }
 	}
 	t_ctx.setup_grid()!
@@ -102,7 +102,7 @@ fn test_context_offset_clear_from_offset() {
 }
 
 fn test_context_offset_clear_to_offset() {
-	mut t_ctx := Context{
+	mut t_ctx := TUIContext{
 		ref: unsafe { nil }
 	}
 	t_ctx.setup_grid()!
@@ -127,7 +127,7 @@ fn test_context_offset_clear_to_offset() {
 }
 
 fn test_context_offset_compact() {
-	mut t_ctx := Context{
+	mut t_ctx := TUIContext{
 		ref: unsafe { nil }
 	}
 	t_ctx.setup_grid()!
@@ -143,7 +143,7 @@ fn test_context_offset_compact() {
 }
 
 fn test_context_offset_compact_from() {
-	mut t_ctx := Context{
+	mut t_ctx := TUIContext{
 		ref: unsafe { nil }
 	}
 	t_ctx.setup_grid()!

@@ -15,7 +15,7 @@
 // IMPORTANT AMENDMENT NOTICE: Some code within this file is under the MIT license.
 // All instances of these pieces of code are clearly marked and noted.
 
-module draw
+module bobatea
 
 import lib.term.ui as tui
 import arrays
@@ -262,7 +262,7 @@ enum CursorStyle as u8 {
 	vertical_bar
 }
 
-struct Context {
+struct TUIContext {
 	render_debug        bool
 mut:
 	stroke              string = ` `.str()
@@ -287,13 +287,14 @@ mut:
 }
 
 pub struct ClipArea {
+pub:
 	min_x int
 	min_y int
 	max_x int
 	max_y int
 }
 
-fn (c ClipArea) apply_offsets(ctx Context) ClipArea {
+fn (c ClipArea) apply_offsets(ctx TUIContext) ClipArea {
 	offsets_to_apply := if ctx.clip_area_offset_id != -1 {
 		if index := ctx.map_id_to_index(ctx.clip_area_offset_id) {
 			ctx.offsets[..index + 1]
@@ -350,10 +351,8 @@ mut:
 	run() !
 }
 
-type Runner = fn () !
-
-pub fn new_context(cfg Config) (&Contextable, Runner) {
-	mut ctx := Context{
+pub fn new_context(cfg Config) (&Contextable, fn () !) {
+	mut ctx := TUIContext{
 		render_debug:     cfg.render_debug
 		default_fg_color: cfg.default_fg_color
 		default_bg_color: cfg.default_bg_color
@@ -374,39 +373,39 @@ pub fn new_context(cfg Config) (&Contextable, Runner) {
 	return ctx, unsafe { ctx.run }
 }
 
-fn (mut ctx Context) setup_grid() ! {
+fn (mut ctx TUIContext) setup_grid() ! {
 	ctx.data = Grid.new(ctx.window_width(), ctx.window_height())!
 }
 
-fn (mut ctx Context) rate_limit_draws() bool {
+fn (mut ctx TUIContext) rate_limit_draws() bool {
 	return true
 }
 
-fn (mut ctx Context) render_debug() bool {
+fn (mut ctx TUIContext) render_debug() bool {
 	return ctx.render_debug
 }
 
-fn (ctx Context) window_width() int {
+fn (ctx TUIContext) window_width() int {
 	if ctx.ref.window_width <= 0 {
 		return 100
 	}
 	return ctx.ref.window_width
 }
 
-fn (ctx Context) window_height() int {
+fn (ctx TUIContext) window_height() int {
 	if ctx.ref.window_height <= 0 {
 		return 100
 	}
 	return ctx.ref.window_height
 }
 
-fn (mut ctx Context) next_id() int {
+fn (mut ctx TUIContext) next_id() int {
 	ctx.id_counter += 1
 	// constant is from Knuth's multiplicative hash
 	return (ctx.id_counter * 2654435761) % 1000000
 }
 
-fn (ctx Context) map_id_to_index(id int) ?int {
+fn (ctx TUIContext) map_id_to_index(id int) ?int {
 	index := arrays.index_of_first(ctx.offsets, fn [id] (idx int, o Offset) bool {
 		return o.id == id
 	})
@@ -416,7 +415,7 @@ fn (ctx Context) map_id_to_index(id int) ?int {
 	return index
 }
 
-fn (mut ctx Context) push_offset(o Offset) int {
+fn (mut ctx TUIContext) push_offset(o Offset) int {
 	id := ctx.next_id()
 	ctx.offsets << Offset{
 		id: id
@@ -426,21 +425,21 @@ fn (mut ctx Context) push_offset(o Offset) int {
 	return id
 }
 
-fn (ctx Context) compact_offsets() Offset {
+fn (ctx TUIContext) compact_offsets() Offset {
 	return ctx.offsets.compact()
 }
 
-fn (ctx Context) compact_offsets_to(id int) Offset {
+fn (ctx TUIContext) compact_offsets_to(id int) Offset {
 	index := ctx.map_id_to_index(id) or { return Offset{} }
 	return ctx.offsets[..index].compact()
 }
 
-fn (ctx Context) compact_offsets_from(id int) Offset {
+fn (ctx TUIContext) compact_offsets_from(id int) Offset {
 	index := ctx.map_id_to_index(id) or { return Offset{} }
 	return ctx.offsets[index..].compact()
 }
 
-fn (mut ctx Context) pop_offset() ?Offset {
+fn (mut ctx TUIContext) pop_offset() ?Offset {
 	if ctx.offsets.len == 0 {
 		return none
 	}
@@ -451,35 +450,35 @@ fn (mut ctx Context) pop_offset() ?Offset {
 	return result
 }
 
-fn (mut ctx Context) clear_offsets_to(id int) {
+fn (mut ctx TUIContext) clear_offsets_to(id int) {
 	ctx.clear_to_offset(id)
 }
 
-fn (mut ctx Context) clear_to_offset(id int) {
+fn (mut ctx TUIContext) clear_to_offset(id int) {
 	index := ctx.map_id_to_index(id) or { return }
 	ctx.offsets.drop(index)
 }
 
-fn (mut ctx Context) clear_offsets_from(id int) {
+fn (mut ctx TUIContext) clear_offsets_from(id int) {
 	ctx.clear_from_offset(id)
 	if clip_area := ctx.clip_area {
         ctx.cached_clip_area = clip_area.apply_offsets(ctx)
     }
 }
 
-fn (mut ctx Context) clear_from_offset(id int) {
+fn (mut ctx TUIContext) clear_from_offset(id int) {
 	index := ctx.map_id_to_index(id) or { return }
 	ctx.offsets = ctx.offsets[..index]
 }
 
-fn (mut ctx Context) clear_all_offsets() {
+fn (mut ctx TUIContext) clear_all_offsets() {
 	ctx.offsets.clear()
 	if clip_area := ctx.clip_area {
         ctx.cached_clip_area = clip_area.apply_offsets(ctx)
     }
 }
 
-fn (mut ctx Context) set_clip_area(c ClipArea) {
+fn (mut ctx TUIContext) set_clip_area(c ClipArea) {
 	ctx.clip_area_offset_id = if ctx.offsets.len > 0 {
 		ctx.offsets.last().id
 	} else {
@@ -489,7 +488,7 @@ fn (mut ctx Context) set_clip_area(c ClipArea) {
 	ctx.cached_clip_area = c.apply_offsets(ctx)
 }
 
-fn (mut ctx Context) clear_clip_area() {
+fn (mut ctx TUIContext) clear_clip_area() {
 	ctx.clip_area = none
 	ctx.clip_area_offset_id = -1
 	ctx.cached_clip_area = none
@@ -499,7 +498,7 @@ fn rune_visual_width(r rune) int {
 	return utf8_str_visible_length(r.str())
 }
 
-fn (mut ctx Context) write(c string) {
+fn (mut ctx TUIContext) write(c string) {
 	cursor_pos := ctx.cursor_pos
 	mut x_offset := 0
 
@@ -557,23 +556,23 @@ fn (mut ctx Context) write(c string) {
 	}
 }
 
-fn (mut ctx Context) bold() {
+fn (mut ctx TUIContext) bold() {
 	ctx.bold = true
 }
 
-fn (mut ctx Context) set_stroke(s string) {
+fn (mut ctx TUIContext) set_stroke(s string) {
 	ctx.stroke = s
 }
 
-fn (mut ctx Context) set_style(s Style) {
+fn (mut ctx TUIContext) set_style(s Style) {
 	ctx.style = s
 }
 
-fn (mut ctx Context) clear_style() {
+fn (mut ctx TUIContext) clear_style() {
 	ctx.style = none
 }
 
-fn (mut ctx Context) set_cursor_position(x int, y int) {
+fn (mut ctx TUIContext) set_cursor_position(x int, y int) {
 	ctx.cursor_pos = Pos{
 		x: x
 		y: y
@@ -581,73 +580,73 @@ fn (mut ctx Context) set_cursor_position(x int, y int) {
 	ctx.cursor_pos_set = true
 }
 
-fn (mut ctx Context) set_cursor_to_block() {
+fn (mut ctx TUIContext) set_cursor_to_block() {
 	ctx.cursor_style = .block
 }
 
-fn (mut ctx Context) set_cursor_to_underline() {
+fn (mut ctx TUIContext) set_cursor_to_underline() {
 	ctx.cursor_style = .underline
 }
 
-fn (mut ctx Context) set_cursor_to_vertical_bar() {
+fn (mut ctx TUIContext) set_cursor_to_vertical_bar() {
 	ctx.cursor_style = .vertical_bar
 }
 
-fn (mut ctx Context) show_cursor() {
+fn (mut ctx TUIContext) show_cursor() {
 	ctx.hide_cursor = false
 }
 
-fn (mut ctx Context) hide_cursor() {
+fn (mut ctx TUIContext) hide_cursor() {
 	ctx.hide_cursor = true
 }
 
-fn (mut ctx Context) set_color(c Color) {
+fn (mut ctx TUIContext) set_color(c Color) {
 	ctx.fg_color = c
 }
 
-fn (mut ctx Context) set_bg_color(c Color) {
+fn (mut ctx TUIContext) set_bg_color(c Color) {
 	ctx.bg_color = c
 }
 
-fn (mut ctx Context) set_default_fg_color(c Color) {
+fn (mut ctx TUIContext) set_default_fg_color(c Color) {
 	ctx.default_fg_color = c
 }
 
-fn (mut ctx Context) set_default_bg_color(c Color) {
+fn (mut ctx TUIContext) set_default_bg_color(c Color) {
 	ctx.default_bg_color = c
 }
 
-fn (mut ctx Context) get_default_fg_color() ?Color {
+fn (mut ctx TUIContext) get_default_fg_color() ?Color {
 	return ctx.default_fg_color
 }
 
-fn (mut ctx Context) get_default_bg_color() ?Color {
+fn (mut ctx TUIContext) get_default_bg_color() ?Color {
 	return ctx.default_bg_color
 }
 
-fn (mut ctx Context) reset_default_fg_color() {
+fn (mut ctx TUIContext) reset_default_fg_color() {
 	ctx.default_fg_color = none
 }
 
-fn (mut ctx Context) reset_default_bg_color() {
+fn (mut ctx TUIContext) reset_default_bg_color() {
 	ctx.default_bg_color = none
 }
 
-fn (mut ctx Context) reset_color() {
+fn (mut ctx TUIContext) reset_color() {
 	ctx.fg_color = none
 }
 
-fn (mut ctx Context) reset_bg_color() {
+fn (mut ctx TUIContext) reset_bg_color() {
 	ctx.bg_color = none
 }
 
-fn (mut ctx Context) reset() {
+fn (mut ctx TUIContext) reset() {
 	ctx.bold = false
 	ctx.fg_color = none
 	ctx.bg_color = none
 }
 
-fn (mut ctx Context) clear() {
+fn (mut ctx TUIContext) clear() {
 	// Ensure grid matches current terminal dimensions before drawing.
 	// Without this, the first frame after init renders into a fallback-sized
 	// grid (100x100) while view() positions content using real terminal
@@ -664,7 +663,7 @@ fn (mut ctx Context) clear() {
 	ctx.cursor_pos_set = false
 }
 
-fn (mut ctx Context) clear_prev_data() {
+fn (mut ctx TUIContext) clear_prev_data() {
 	// Create a grid filled with cells that will never match real content
 	mut invalid_grid := Grid.new(ctx.data.width, ctx.data.height) or { return }
 
@@ -693,19 +692,19 @@ fn apply_offsets(offsets []Offset, x int, y int) (int, int) {
 	return xx, yy
 }
 
-fn (mut ctx Context) draw_point(x int, y int) {
+fn (mut ctx TUIContext) draw_point(x int, y int) {
 	ctx.set_cursor_position(x, y)
 	ctx.write(ctx.stroke)
 }
 
-fn (mut ctx Context) draw_text(x int, y int, text string) {
+fn (mut ctx TUIContext) draw_text(x int, y int, text string) {
 	xx, yy := apply_offsets(ctx.offsets, x, y)
 
 	ctx.set_cursor_position(xx, yy)
 	ctx.write(text)
 }
 
-fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
+fn (mut ctx TUIContext) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
 	xx, yy := if do_apply_offsets { apply_offsets(ctx.offsets, x, y) } else { x, y }
 	xx2, yy2 := if do_apply_offsets {
 		apply_offsets(ctx.offsets, x2, y2)
@@ -753,7 +752,7 @@ fn (mut ctx Context) draw_line(x int, y int, x2 int, y2 int, do_apply_offsets bo
 	// ===== BLOCK END =====
 }
 
-fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
+fn (mut ctx TUIContext) draw_dashed_line(x int, y int, x2 int, y2 int, do_apply_offsets bool) {
 	xx, yy := if do_apply_offsets { apply_offsets(ctx.offsets, x, y) } else { x, y }
 	xx2, yy2 := if do_apply_offsets {
 		apply_offsets(ctx.offsets, x2, y2)
@@ -793,7 +792,7 @@ fn (mut ctx Context) draw_dashed_line(x int, y int, x2 int, y2 int, do_apply_off
 	// ===== BLOCK END =====
 }
 
-fn (mut ctx Context) clear_area(x int, y int, width int, height int) {
+fn (mut ctx TUIContext) clear_area(x int, y int, width int, height int) {
 	xx, yy := apply_offsets(ctx.offsets, x, y)
 	max_x := xx + width
 	max_y := yy + height
@@ -804,7 +803,7 @@ fn (mut ctx Context) clear_area(x int, y int, width int, height int) {
 	}
 }
 
-fn (mut ctx Context) draw_rect(x int, y int, width int, height int) {
+fn (mut ctx TUIContext) draw_rect(x int, y int, width int, height int) {
 	re_apply_offsets := false
 	xx, yy := apply_offsets(ctx.offsets, x, y)
 	x2 := xx + (width - 1)
@@ -823,7 +822,7 @@ fn (mut ctx Context) draw_rect(x int, y int, width int, height int) {
 	// ===== BLOCK END =====
 }
 
-fn (mut ctx Context) run() ! {
+fn (mut ctx TUIContext) run() ! {
 	return ctx.ref.run()
 }
 
@@ -842,7 +841,7 @@ fn opt_color_eq(a ?Color, b ?Color) bool {
 	return true
 }
 
-fn (mut ctx Context) flush() {
+fn (mut ctx TUIContext) flush() {
 	new_width := ctx.window_width()
 	new_height := ctx.window_height()
 

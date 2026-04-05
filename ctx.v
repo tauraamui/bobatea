@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module draw
+module bobatea
 
 import lib.term.ui as tui
 
@@ -33,8 +33,6 @@ pub:
 	capture_events       bool
 	use_alternate_buffer bool = true
 }
-
-pub type Runner = fn () !
 
 pub interface Drawer {
 mut:
@@ -104,3 +102,6 @@ mut:
 	flush()
 	clear_prev_data()
 }
+
+// Context is an alias for Contextable, the public drawing context interface.
+pub type Context = Contextable

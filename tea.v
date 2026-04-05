@@ -1,13 +1,12 @@
 module bobatea
 
-import lib.draw
 import time
 
 @[heap]
 pub struct App {
 	render_debug bool
 mut:
-	ui                 &Context = unsafe { nil }
+	ui                 &Contextable = unsafe { nil }
 	initial_model      Model
 	event_invoked      bool
 	update_invoked     bool
@@ -33,9 +32,9 @@ pub struct TickCmd {
 
 pub interface Model {
 mut:
-	init() ?Cmd
-	update(Msg) (Model, ?Cmd)
-	view(mut Context)
+	init() Cmd
+	update(Msg) (Model, Cmd)
+	view(mut Contextable)
 	clone() Model
 }
 
@@ -242,7 +241,7 @@ pub fn every(duration time.Duration, f fn (time.Time) Msg) Cmd {
 }
 
 pub fn (mut app App) run() ! {
-	mut ctx, run := draw.new_context(
+	mut ctx, run := new_context(
 		render_debug:         false
 		user_data:            app
 		event_fn:             event
@@ -251,9 +250,9 @@ pub fn (mut app App) run() ! {
 		capture_events:       true
 		use_alternate_buffer: true
 	)
-	app.ui = &Context(ctx)
+	app.ui = ctx
 
-	cmd := app.initial_model.init() or { noop_cmd }
+	cmd := app.initial_model.init()
 	models_msg := cmd()
 
 	// Store the initial message to be processed after the TUI loop starts
@@ -283,7 +282,7 @@ pub fn clear_screen() Msg {
 
 // NOTE(tauraamui) [22/10/2025]: this is invoked by the underlying runtime loop directly only
 //                               when an actual event comes in, (keypress/resize, etc.,)
-fn event(e draw.Event, mut app App) {
+fn event(e Event, mut app App) {
 	msg := match e.typ {
 		.key_down {
 			Msg(resolve_key_msg(e))
@@ -350,8 +349,7 @@ fn (mut app App) handle_event(msg Msg) {
 	m, cmd := app.initial_model.update(msg)
 	app.initial_model = m
 	app.needs_render = true
-	u_cmd := cmd or { noop_cmd }
-	models_msg := u_cmd()
+	models_msg := cmd()
 	if models_msg is QuitMsg {
 		app.quit() or { panic(err) }
 		return
@@ -480,10 +478,12 @@ fn (mut app App) send(msg Msg) {
 // process_queued_messages processes all messages in the queue
 fn (mut app App) process_queued_messages() {
 	for {
-		mut msg_to_process := ?Msg(none)
+		mut msg_to_process := Msg(NoopMsg{})
+		mut has_msg := false
 		lock app.msg_queue {
 			if app.msg_queue.len > 0 {
 				msg_to_process = app.msg_queue[0]
+				has_msg = true
 				if app.msg_queue.len == 1 {
 					app.msg_queue.clear()
 				} else {
@@ -492,8 +492,8 @@ fn (mut app App) process_queued_messages() {
 			}
 		}
 
-		if msg := msg_to_process {
-			app.handle_event(msg)
+		if has_msg {
+			app.handle_event(msg_to_process)
 		} else {
 			break
 		}
