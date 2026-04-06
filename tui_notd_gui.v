@@ -36,10 +36,10 @@ mut:
 
 fn (grid Grid) clone() Grid {
 	return Grid{
-		data: grid.data.clone()
+		data:      grid.data.clone()
 		prev_data: grid.prev_data.clone()
-		width: grid.width
-		height: grid.height
+		width:     grid.width
+		height:    grid.height
 	}
 }
 
@@ -156,7 +156,9 @@ fn (style Style) open() string {
 		.underline {
 			'\x1b[4m'
 		}
-		.none { "" }
+		.none {
+			''
+		}
 	}
 }
 
@@ -168,7 +170,9 @@ fn (style Style) close() string {
 		.underline {
 			'\x1b[24m'
 		}
-		.none { "" }
+		.none {
+			''
+		}
 	}
 }
 
@@ -263,7 +267,7 @@ enum CursorStyle as u8 {
 }
 
 struct TUIContext {
-	render_debug        bool
+	render_debug bool
 mut:
 	stroke              string = ` `.str()
 	default_fg_color    ?Color
@@ -445,8 +449,8 @@ fn (mut ctx TUIContext) pop_offset() ?Offset {
 	}
 	result := ctx.offsets.pop()
 	if clip_area := ctx.clip_area {
-        ctx.cached_clip_area = clip_area.apply_offsets(ctx)
-    }
+		ctx.cached_clip_area = clip_area.apply_offsets(ctx)
+	}
 	return result
 }
 
@@ -462,8 +466,8 @@ fn (mut ctx TUIContext) clear_to_offset(id int) {
 fn (mut ctx TUIContext) clear_offsets_from(id int) {
 	ctx.clear_from_offset(id)
 	if clip_area := ctx.clip_area {
-        ctx.cached_clip_area = clip_area.apply_offsets(ctx)
-    }
+		ctx.cached_clip_area = clip_area.apply_offsets(ctx)
+	}
 }
 
 fn (mut ctx TUIContext) clear_from_offset(id int) {
@@ -474,8 +478,8 @@ fn (mut ctx TUIContext) clear_from_offset(id int) {
 fn (mut ctx TUIContext) clear_all_offsets() {
 	ctx.offsets.clear()
 	if clip_area := ctx.clip_area {
-        ctx.cached_clip_area = clip_area.apply_offsets(ctx)
-    }
+		ctx.cached_clip_area = clip_area.apply_offsets(ctx)
+	}
 }
 
 fn (mut ctx TUIContext) set_clip_area(c ClipArea) {
@@ -508,11 +512,11 @@ fn (mut ctx TUIContext) write(c string) {
 		y := cursor_pos.y
 
 		if clip_area := ctx.cached_clip_area {
-            if !clip_area.in_bounds(x, y) {
-                x_offset += width
-                continue
-            }
-        }
+			if !clip_area.in_bounds(x, y) {
+				x_offset += width
+				continue
+			}
+		}
 
 		// When no explicit bg color is set, preserve the existing cell's
 		// bg color (e.g. from a prior draw_rect call).
@@ -670,12 +674,12 @@ fn (mut ctx TUIContext) clear_prev_data() {
 	// Fill with cells that have invalid/unique properties
 	for i in 0 .. invalid_grid.data.len {
 		invalid_grid.data[i] = Cell{
-			data: `\0`  // null character that won't appear in real content
-			visual_width: -1  // invalid width
+			data:            `\0` // null character that won't appear in real content
+			visual_width:    -1   // invalid width
 			is_continuation: false
-			fg_color: Color{255, 0, 255}  // magenta - unlikely color
-			bg_color: Color{255, 0, 255}
-			style: .strikethrough  // unusual style
+			fg_color:        Color{255, 0, 255} // magenta - unlikely color
+			bg_color:        Color{255, 0, 255}
+			style:           .strikethrough // unusual style
 		}
 	}
 
@@ -868,7 +872,9 @@ fn (mut ctx TUIContext) flush() {
 		if prev_grid.width == ctx.data.width && prev_grid.height == ctx.data.height {
 			// Shallow copy of the slice header (same pointer, no data copy).
 			// prev_data_slice is only read inside the loop below, never written to.
-			unsafe { prev_data_slice = prev_grid.data }
+			unsafe {
+				prev_data_slice = prev_grid.data
+			}
 			can_diff = true
 		}
 	}
@@ -1000,8 +1006,12 @@ fn (mut ctx TUIContext) flush() {
 			// clear() next frame), and ctx.prev_data.data gets this frame's cells.
 			// All three assignments are shallow slice-header copies; no data is allocated.
 			mut swapped_prev := prev_grid
-			unsafe { swapped_prev.data = ctx.data.data }
-			unsafe { ctx.data.data = prev_grid.data }
+			unsafe {
+				swapped_prev.data = ctx.data.data
+			}
+			unsafe {
+				ctx.data.data = prev_grid.data
+			}
 			ctx.prev_data = swapped_prev
 		} else {
 			ctx.prev_data = ctx.data.clone()
