@@ -17,6 +17,7 @@ mut:
 	last_activity_time time.Time
 	is_idle            bool
 	needs_render       bool = true
+	on_quit            ?fn ()
 }
 
 pub type Cmd = fn () Msg
@@ -262,6 +263,9 @@ pub fn (mut app App) run() ! {
 }
 
 fn (mut app App) quit() ! {
+	if cleanup := app.on_quit {
+		cleanup()
+	}
 	exit(0)
 }
 
@@ -567,8 +571,15 @@ fn frame(mut app App) {
 	app.ui.flush()
 }
 
-pub fn new_program(mut m Model) App {
+@[params]
+pub struct ProgramOpts {
+pub:
+	on_quit ?fn ()
+}
+
+pub fn new_program(mut m Model, opts ProgramOpts) App {
 	return App{
 		initial_model: m
+		on_quit:       opts.on_quit
 	}
 }
