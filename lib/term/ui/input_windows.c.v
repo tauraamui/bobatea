@@ -190,6 +190,9 @@ fn (mut ctx Context) parse_events() {
 				if e.bKeyDown == 0 {
 					continue
 				}
+				if e.bKeyDown == 0 || (ascii == 0 && unsafe { e.uChar.UnicodeChar } == 0) {
+					continue
+				}
 				// we don't handle key_up events because they don't exist on linux...
 				// see: https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
 				code := match int(ch) {
