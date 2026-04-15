@@ -145,3 +145,9 @@ fn (mut ctx GUIContext) clear() {
 }
 
 fn (mut ctx GUIContext) flush() {}
+
+fn (ctx GUIContext) screen_text() string {
+	return ''
+}
+
+fn (mut ctx GUIContext) clear_prev_data() {}
