@@ -841,6 +841,29 @@ fn opt_color_eq(a ?Color, b ?Color) bool {
 	return true
 }
 
+fn (ctx TUIContext) screen_text() string {
+	mut lines := []string{cap: ctx.data.height}
+	for row in 0 .. ctx.data.height {
+		mut line := []u8{cap: ctx.data.width}
+		for col in 0 .. ctx.data.width {
+			cell := ctx.data.data[row * ctx.data.width + col]
+			if cell.is_continuation {
+				continue
+			}
+			if r := cell.data {
+				s := r.str()
+				for b in s.bytes() {
+					line << b
+				}
+			} else {
+				line << u8(` `)
+			}
+		}
+		lines << line.bytestr()
+	}
+	return lines.join('\n')
+}
+
 fn (mut ctx TUIContext) flush() {
 	new_width := ctx.window_width()
 	new_height := ctx.window_height()

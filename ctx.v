@@ -80,6 +80,12 @@ pub interface Renderer {
 
 pub interface Context {
 	Renderer
+	// screen_text returns the current frame's rendered content as plain text.
+	// Each row of the terminal grid becomes one line, with rows separated by
+	// newlines. Empty cells are represented as spaces. This is useful for
+	// golden-file testing: capture the screen state after rendering, write it
+	// to disk, and later compare against a known-good reference frame.
+	screen_text() string
 mut:
 	render_debug() bool
 	rate_limit_draws() bool
