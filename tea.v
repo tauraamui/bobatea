@@ -6,17 +6,18 @@ import time
 pub struct App {
 	render_debug bool
 mut:
-	ui                 &Context = unsafe { nil }
-	initial_model      Model
-	event_invoked      bool
-	update_invoked     bool
-	next_msg           ?Msg
-	msg_queue          shared []Msg // Queue for messages from batch commands
-	update_rate        int = 60 // Update rate in Hz (2000 = 0.5ms intervals)
+	ui             &Context = unsafe { nil }
+	initial_model  Model
+	event_invoked  bool
+	update_invoked bool
+	next_msg       ?Msg
+	msg_queue      shared []Msg // Queue for messages from batch commands
+	update_rate    int = 60 // Update rate in Hz (2000 = 0.5ms intervals)
 
 	last_activity_time time.Time
 	is_idle            bool
 	needs_render       bool = true
+	on_quit            ?fn ()
 }
 
 pub type Cmd = fn () Msg
@@ -262,6 +263,9 @@ pub fn (mut app App) run() ! {
 }
 
 fn (mut app App) quit() ! {
+	if cleanup := app.on_quit {
+		cleanup()
+	}
 	exit(0)
 }
 
@@ -272,6 +276,7 @@ pub:
 }
 
 pub struct FocusedMsg {}
+
 pub struct BlurredMsg {}
 
 pub struct ClearScreenMsg {}
@@ -367,7 +372,6 @@ fn (mut app App) handle_event(msg Msg) {
 			app.ui.clear_prev_data()
 			return
 		}
-
 		SequenceMsg {
 			app.exec_sequence_msg(models_msg)
 		}
@@ -504,52 +508,52 @@ fn (mut app App) process_queued_messages() {
 fn update_loop(mut app App) {
 	mut had_activity := false
 
-    // Check if there are any messages to process
-    lock app.msg_queue {
-        if app.msg_queue.len > 0 {
-            had_activity = true
-        }
-    }
+	// Check if there are any messages to process
+	lock app.msg_queue {
+		if app.msg_queue.len > 0 {
+			had_activity = true
+		}
+	}
 
-    // Check if there's a next_msg pending
-    if app.next_msg != none {
-        had_activity = true
-    }
+	// Check if there's a next_msg pending
+	if app.next_msg != none {
+		had_activity = true
+	}
 
-    // Update last activity time if there was activity
-    if had_activity {
-        app.last_activity_time = time.now()
-        app.is_idle = false
-    }
+	// Update last activity time if there was activity
+	if had_activity {
+		app.last_activity_time = time.now()
+		app.is_idle = false
+	}
 
-    // Process all queued messages
-    app.process_queued_messages()
+	// Process all queued messages
+	app.process_queued_messages()
 
 	// Process next_msg if present
-    msg := app.next_msg or { Msg(NoopMsg{}) }
-    if app.next_msg != none {
-        app.next_msg = none
-        app.handle_event(msg)
-    }
+	msg := app.next_msg or { Msg(NoopMsg{}) }
+	if app.next_msg != none {
+		app.next_msg = none
+		app.handle_event(msg)
+	}
 
 	time_since_last_activity := time.since(app.last_activity_time)
 
-    if time_since_last_activity > 100 * time.millisecond {
-        // We've been idle for more than 100ms
-        if !app.is_idle {
-            app.is_idle = true
-            // Optional: log that we entered idle mode
-            // eprintln('Entering idle mode')
-        }
+	if time_since_last_activity > 100 * time.millisecond {
+		// We've been idle for more than 100ms
+		if !app.is_idle {
+			app.is_idle = true
+			// Optional: log that we entered idle mode
+			// eprintln('Entering idle mode')
+		}
 
-        // Sleep longer when idle (10ms instead of 1ms)
-        // This reduces CPU usage from 1-2% to ~0.1%
-        time.sleep(10 * time.millisecond)
-    } else {
-        // We're active, use normal sleep
-        app.is_idle = false
-        time.sleep(time.millisecond)
-    }
+		// Sleep longer when idle (10ms instead of 1ms)
+		// This reduces CPU usage from 1-2% to ~0.1%
+		time.sleep(10 * time.millisecond)
+	} else {
+		// We're active, use normal sleep
+		app.is_idle = false
+		time.sleep(time.millisecond)
+	}
 }
 
 // NOTE(tauraamui) [22/10/2025]: this function is called on each iteration of runtime loop directly
@@ -567,8 +571,15 @@ fn frame(mut app App) {
 	app.ui.flush()
 }
 
-pub fn new_program(mut m Model) App {
+@[params]
+pub struct ProgramOpts {
+pub:
+	on_quit ?fn ()
+}
+
+pub fn new_program(mut m Model, opts ProgramOpts) App {
 	return App{
 		initial_model: m
+		on_quit:       opts.on_quit
 	}
 }

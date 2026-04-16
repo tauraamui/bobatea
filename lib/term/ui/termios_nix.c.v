@@ -340,8 +340,8 @@ fn (mut ctx Context) parse_events() {
 				combined_event := &Event{
 					typ:       event.typ
 					ascii:     event.ascii
-					code:      KeyCode.w  // Keep as w so resolve_key_msg can detect this case
-					utf8:      '\x17' + event.utf8  // '\x17' is Ctrl+w + the second key
+					code:      KeyCode.w                  // Keep as w so resolve_key_msg can detect this case
+					utf8:      '\x17' + event.utf8 // '\x17' is Ctrl+w + the second key
 					modifiers: .ctrl
 				}
 				ctx.event(combined_event)
@@ -351,13 +351,13 @@ fn (mut ctx Context) parse_events() {
 				// First emit the pending Ctrl+w event
 				ctrl_w_event := &Event{
 					typ:       .key_down
-					ascii:     23  // Ctrl+w byte
+					ascii:     23 // Ctrl+w byte
 					code:      KeyCode.w
 					utf8:      'w'
 					modifiers: .ctrl
 				}
 				ctx.event(ctrl_w_event)
-				ctx.event(event)  // Then emit the current event
+				ctx.event(event) // Then emit the current event
 				ctx.pending_ctrl_w = false
 			} else if event.code == KeyCode.w && event.modifiers == .ctrl {
 				// This is Ctrl+w - set pending flag and don't emit yet
@@ -390,10 +390,10 @@ fn single_char(buf string) &Event {
 		// don't treat tab, enter as ctrl+i, ctrl+j
 		8 {
 			return &Event{
-				typ: .key_down
+				typ:   .key_down
 				ascii: 127
-				code: .backspace
-				utf8: '\x7f'
+				code:  .backspace
+				utf8:  '\x7f'
 			}
 		}
 		1...7, 9, 11...26 {
@@ -433,10 +433,10 @@ fn multi_char(buf string) (&Event, int) {
 	// handle backspace variants
 	if ch == 8 {
 		return &Event{
-			typ: .key_down
+			typ:   .key_down
 			ascii: 127
-			code: .backspace
-			utf8: '\x7f'
+			code:  .backspace
+			utf8:  '\x7f'
 		}, 1
 	}
 
@@ -646,7 +646,7 @@ fn escape_sequence(buf_ string) (&Event, int) {
 	mut code := KeyCode.null
 	mut modifiers := unsafe { Modifiers(0) }
 	match buf {
-		'[91;5u'   { code = .escape }
+		'[91;5u' { code = .escape }
 		'[A', 'OA' { code = .up }
 		'[B', 'OB' { code = .down }
 		'[C', 'OC' { code = .right }
