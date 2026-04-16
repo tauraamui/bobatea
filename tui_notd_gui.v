@@ -649,19 +649,11 @@ fn (mut ctx TUIContext) reset() {
 	ctx.fg_color = none
 	ctx.bg_color = none
 }
-
 fn (mut ctx TUIContext) clear() {
-	// Ensure grid matches current terminal dimensions before drawing.
-	// Without this, the first frame after init renders into a fallback-sized
-	// grid (100x100) while view() positions content using real terminal
-	// dimensions, causing centered content to be silently dropped.
 	ctx.data.resize(ctx.window_width(), ctx.window_height()) or {}
-	// Zero cells in-place to avoid a heap allocation every frame.
-	// flush() handles resizing if window dimensions have changed.
 	for i in 0 .. ctx.data.data.len {
 		ctx.data.data[i] = Cell{}
 	}
-	// Clear all transient frame state
 	ctx.clear_all_offsets()
 	ctx.clear_clip_area()
 	ctx.cursor_pos_set = false
@@ -872,29 +864,27 @@ fn (mut ctx TUIContext) flush() {
 	new_width := ctx.window_width()
 	new_height := ctx.window_height()
 
-	// Check if we need to clear cells that are now outside the new dimensions
 	if prev_grid := ctx.prev_data {
 		if prev_grid.width > new_width || prev_grid.height > new_height {
-			// Clear the entire screen when shrinking to ensure no leftover cells
 			ctx.ref.clear()
-			// Also clear offsets and clip area when downsizing as they may position content outside new bounds
 			ctx.clear_all_offsets()
 			ctx.clear_clip_area()
 		}
 	}
 
-	ctx.data.resize(new_width, new_height) or { panic('flush failed to resize grid -> ${err}') }
+	ctx.data.resize(new_width, new_height) or {
+		panic('flush failed to resize grid -> ${err}')
+	}
 	ctx.ref.hide_cursor()
 
-	// Hoist the prev_data optional check and same-size test outside the render loop.
-	// This avoids re-checking the ?Grid option and the width/height equality on every cell.
-	// prev_data_slice is a copy of the slice header pointing at the previous frame's cells.
+	// Synchronized output: begin batch to prevent tearing.
+	ctx.ref.write('\x1b[?2026h')
+
 	mut prev_data_slice := []Cell{}
 	mut can_diff := false
 	if prev_grid := ctx.prev_data {
-		if prev_grid.width == ctx.data.width && prev_grid.height == ctx.data.height {
-			// Shallow copy of the slice header (same pointer, no data copy).
-			// prev_data_slice is only read inside the loop below, never written to.
+		if prev_grid.width == ctx.data.width
+			&& prev_grid.height == ctx.data.height {
 			unsafe {
 				prev_data_slice = prev_grid.data
 			}
@@ -902,45 +892,46 @@ fn (mut ctx TUIContext) flush() {
 		}
 	}
 
-	// Track the terminal's current rendering state across cell writes so we only
-	// emit escape sequences when something actually changes.  We reset everything
-	// at the end of the frame so the next frame always starts from a known baseline.
 	mut term_fg := ?Color(none)
 	mut term_bg := ?Color(none)
 	mut term_style := ?Style(none)
-	// Expected cursor column after the last write.  -1 means position is unknown.
 	mut cursor_x := -1
 	mut cursor_y := -1
+	mut write_buf := []u8{cap: ctx.data.width}
 
 	for y in 0 .. ctx.data.height {
 		for x in 0 .. ctx.data.width {
-			// Direct array indexing avoids the bounds-check + error-boxing of Grid.get().
 			index := y * ctx.data.width + x
 			cell := ctx.data.data[index]
 
-			// Continuation cells occupy screen space but carry no glyph.
 			if cell.is_continuation {
 				continue
 			}
 
-			// Skip unchanged cells entirely — no cursor move, no style, no color output.
-			// Breaking cursor continuity here is fine: the next changed cell will
-			// reposition explicitly.
 			if can_diff && prev_data_slice[index] == cell {
+				if write_buf.len > 0 {
+					ctx.ref.write(write_buf.bytestr())
+					write_buf.clear()
+				}
 				cursor_x = -1
 				continue
 			}
 
-			// Only emit a cursor-position sequence when the cursor is not already
-			// sitting at (x, y) from a previous consecutive write.
 			if cursor_x != x || cursor_y != y {
+				if write_buf.len > 0 {
+					ctx.ref.write(write_buf.bytestr())
+					write_buf.clear()
+				}
 				ctx.ref.set_cursor_position(x + 1, y + 1)
 				cursor_x = x
 				cursor_y = y
 			}
 
-			// Emit a style change only when it differs from the tracked terminal style.
 			if cell.style != term_style {
+				if write_buf.len > 0 {
+					ctx.ref.write(write_buf.bytestr())
+					write_buf.clear()
+				}
 				if prev_style := term_style {
 					ctx.ref.write(prev_style.close())
 				}
@@ -950,7 +941,6 @@ fn (mut ctx TUIContext) flush() {
 				term_style = cell.style
 			}
 
-			// Resolve the desired fg/bg colors (cell-level overrides context defaults).
 			want_fg := if c := cell.fg_color {
 				?Color(c)
 			} else if c := ctx.default_fg_color {
@@ -966,8 +956,11 @@ fn (mut ctx TUIContext) flush() {
 				?Color(none)
 			}
 
-			// Emit color sequences only when they differ from the tracked terminal state.
 			if !opt_color_eq(want_fg, term_fg) {
+				if write_buf.len > 0 {
+					ctx.ref.write(write_buf.bytestr())
+					write_buf.clear()
+				}
 				if c := want_fg {
 					ctx.ref.set_color(tui.Color{c.r, c.g, c.b})
 				} else {
@@ -976,6 +969,10 @@ fn (mut ctx TUIContext) flush() {
 				term_fg = want_fg
 			}
 			if !opt_color_eq(want_bg, term_bg) {
+				if write_buf.len > 0 {
+					ctx.ref.write(write_buf.bytestr())
+					write_buf.clear()
+				}
 				if c := want_bg {
 					ctx.ref.set_bg_color(tui.Color{c.r, c.g, c.b})
 				} else {
@@ -984,15 +981,19 @@ fn (mut ctx TUIContext) flush() {
 				term_bg = want_bg
 			}
 
-			ctx.ref.write(cell.str())
+			s := cell.str()
+			for b in s.bytes() {
+				write_buf << b
+			}
 
-			// Advance the tracked cursor by the glyph's visual width so consecutive
-			// changed cells on the same row skip the next set_cursor_position.
 			cursor_x += cell.visual_width
+		}
+		if write_buf.len > 0 {
+			ctx.ref.write(write_buf.bytestr())
+			write_buf.clear()
 		}
 	}
 
-	// Reset any terminal state set during the frame so the next frame begins clean.
 	if s := term_style {
 		ctx.ref.write(s.close())
 	}
@@ -1018,16 +1019,14 @@ fn (mut ctx TUIContext) flush() {
 			}
 		}
 	}
+
+	// Synchronized output: end batch.
+	ctx.ref.write('\x1b[?2026l')
 	ctx.ref.flush()
 
-	// Update prev_data for next frame's diff.
-	// When dimensions match, swap the slice headers (O(1)) instead of cloning (O(n) + heap alloc).
-	// next frame's clear() will zero the buffer that ends up in ctx.data.data.
 	if prev_grid := ctx.prev_data {
-		if prev_grid.width == ctx.data.width && prev_grid.height == ctx.data.height {
-			// Swap slice headers: ctx.data.data gets the old prev buffer (to be zeroed by
-			// clear() next frame), and ctx.prev_data.data gets this frame's cells.
-			// All three assignments are shallow slice-header copies; no data is allocated.
+		if prev_grid.width == ctx.data.width
+			&& prev_grid.height == ctx.data.height {
 			mut swapped_prev := prev_grid
 			unsafe {
 				swapped_prev.data = ctx.data.data
@@ -1043,3 +1042,4 @@ fn (mut ctx TUIContext) flush() {
 		ctx.prev_data = ctx.data.clone()
 	}
 }
+
