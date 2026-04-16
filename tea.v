@@ -251,6 +251,9 @@ pub fn (mut app App) run() ! {
 		capture_events:       true
 		use_alternate_buffer: true
 	)
+	$if windows {
+		switch_codepage_to_65001()
+	}
 	app.ui = ctx
 
 	cmd := app.initial_model.init()
