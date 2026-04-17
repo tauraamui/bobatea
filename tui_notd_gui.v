@@ -499,6 +499,9 @@ fn (mut ctx TUIContext) clear_clip_area() {
 }
 
 fn rune_visual_width(r rune) int {
+	if r < 128 {
+		return 1
+	}
 	return utf8_str_visible_length(r.str())
 }
 

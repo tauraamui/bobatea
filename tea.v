@@ -14,7 +14,7 @@ mut:
 	msg_queue      shared []Msg // Queue for messages from batch commands
 	update_rate    int = 60 // Update rate in Hz (2000 = 0.5ms intervals)
 
-	last_activity_time time.Time
+	last_activity_mono u64
 	is_idle            bool
 	needs_render       bool = true
 	on_quit            ?fn ()
@@ -525,7 +525,7 @@ fn update_loop(mut app App) {
 
 	// Update last activity time if there was activity
 	if had_activity {
-		app.last_activity_time = time.now()
+		app.last_activity_mono = time.sys_mono_now()
 		app.is_idle = false
 	}
 
@@ -539,7 +539,7 @@ fn update_loop(mut app App) {
 		app.handle_event(msg)
 	}
 
-	time_since_last_activity := time.since(app.last_activity_time)
+	time_since_last_activity := time.Duration(i64(time.sys_mono_now() - app.last_activity_mono))
 
 	if time_since_last_activity > 100 * time.millisecond {
 		// We've been idle for more than 100ms
