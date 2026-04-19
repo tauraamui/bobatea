@@ -212,7 +212,7 @@ fn termios_reset() {
 ///////////////////////////////////////////
 // Input event loop - runs at higher frequency to capture input events
 fn (mut ctx Context) input_loop() {
-	input_poll_time := 250 // 0.25ms polling interval for input events (4x faster than before)
+	input_poll_time := 1000 // 1ms polling interval for input events
 	for {
 		if !ctx.paused && ctx.cfg.event_fn != none {
 			// Check for pending resize events
