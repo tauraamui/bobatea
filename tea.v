@@ -533,8 +533,7 @@ fn update_loop(mut app App) {
 	app.process_queued_messages()
 
 	// Process next_msg if present
-	msg := app.next_msg or { Msg(NoopMsg{}) }
-	if app.next_msg != none {
+	if msg := app.next_msg {
 		app.next_msg = none
 		app.handle_event(msg)
 	}
