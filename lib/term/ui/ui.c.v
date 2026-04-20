@@ -52,10 +52,37 @@ pub fn (mut ctx Context) bold() {
 	ctx.write('\x1b[1m')
 }
 
+// write_int_digits writes the decimal digits of a non-negative integer
+// directly into print_buf without allocating a string.
+@[inline]
+fn (mut ctx Context) write_int_digits(n int) {
+	if n < 10 {
+		ctx.print_buf << u8(n) + `0`
+		return
+	}
+	// Stack buffer for up to 10 digits (covers all 32-bit ints).
+	mut buf := [10]u8{}
+	mut pos := 10
+	mut val := n
+	for val > 0 {
+		pos -= 1
+		buf[pos] = u8(val % 10) + `0`
+		val /= 10
+	}
+	for i in pos .. 10 {
+		ctx.print_buf << buf[i]
+	}
+}
+
 // set_cursor_position positions the cusor at the given coordinates `x`,`y`.
 @[inline]
 pub fn (mut ctx Context) set_cursor_position(x int, y int) {
-	ctx.write('\x1b[${y};${x}H')
+	ctx.print_buf << 0x1b // ESC
+	ctx.print_buf << `[`
+	ctx.write_int_digits(y)
+	ctx.print_buf << `;`
+	ctx.write_int_digits(x)
+	ctx.print_buf << `H`
 }
 
 // show_cursor will make the cursor appear if it is not already visible
@@ -70,24 +97,47 @@ pub fn (mut ctx Context) hide_cursor() {
 	ctx.write('\x1b[?25l')
 }
 
+// write_sgr_color writes an SGR color escape (38 for fg, 48 for bg) directly
+// into print_buf without allocating a string.
+@[inline]
+fn (mut ctx Context) write_sgr_color(kind u8, c Color) {
+	if ctx.enable_rgb {
+		// \x1b[{kind};2;{r};{g};{b}m
+		ctx.print_buf << 0x1b
+		ctx.print_buf << `[`
+		ctx.write_int_digits(int(kind))
+		ctx.print_buf << `;`
+		ctx.print_buf << `2`
+		ctx.print_buf << `;`
+		ctx.write_int_digits(int(c.r))
+		ctx.print_buf << `;`
+		ctx.write_int_digits(int(c.g))
+		ctx.print_buf << `;`
+		ctx.write_int_digits(int(c.b))
+		ctx.print_buf << `m`
+	} else {
+		// \x1b[{kind};5;{ansi}m
+		ctx.print_buf << 0x1b
+		ctx.print_buf << `[`
+		ctx.write_int_digits(int(kind))
+		ctx.print_buf << `;`
+		ctx.print_buf << `5`
+		ctx.print_buf << `;`
+		ctx.write_int_digits(rgb2ansi(c.r, c.g, c.b))
+		ctx.print_buf << `m`
+	}
+}
+
 // set_color sets the current foreground color used by any succeeding `draw_*` calls.
 @[inline]
 pub fn (mut ctx Context) set_color(c Color) {
-	if ctx.enable_rgb {
-		ctx.write('\x1b[38;2;${int(c.r)};${int(c.g)};${int(c.b)}m')
-	} else {
-		ctx.write('\x1b[38;5;${rgb2ansi(c.r, c.g, c.b)}m')
-	}
+	ctx.write_sgr_color(38, c)
 }
 
 // set_color sets the current background color used by any succeeding `draw_*` calls.
 @[inline]
 pub fn (mut ctx Context) set_bg_color(c Color) {
-	if ctx.enable_rgb {
-		ctx.write('\x1b[48;2;${int(c.r)};${int(c.g)};${int(c.b)}m')
-	} else {
-		ctx.write('\x1b[48;5;${rgb2ansi(c.r, c.g, c.b)}m')
-	}
+	ctx.write_sgr_color(48, c)
 }
 
 // reset_color sets the current foreground color back to it's default value.

@@ -288,6 +288,7 @@ mut:
 	bg_color            ?Color
 	offsets             Offsets
 	id_counter          int
+	write_buf           []u8 // persistent buffer reused across frames
 }
 
 pub struct ClipArea {
@@ -875,6 +876,36 @@ fn (ctx TUIContext) screen_text() string {
 	return lines.join('\n')
 }
 
+// flush_write_buf writes the accumulated write_buf to the native context
+// using an unsafe string view (no heap allocation), then clears the buffer.
+fn (mut ctx TUIContext) flush_write_buf() {
+	if ctx.write_buf.len > 0 {
+		ctx.ref.write(unsafe { tos(ctx.write_buf.data, ctx.write_buf.len) })
+		ctx.write_buf.clear()
+	}
+}
+
+// encode_rune_utf8 appends the UTF-8 encoding of a rune directly into write_buf
+// without allocating a string. Mirrors the encoding logic in lilly's Arena.runes_to_str().
+fn (mut ctx TUIContext) encode_rune_utf8(r rune) {
+	v := u32(r)
+	if v <= 0x7F {
+		ctx.write_buf << u8(v)
+	} else if v <= 0x7FF {
+		ctx.write_buf << u8(0xC0 | (v >> 6))
+		ctx.write_buf << u8(0x80 | (v & 0x3F))
+	} else if v <= 0xFFFF {
+		ctx.write_buf << u8(0xE0 | (v >> 12))
+		ctx.write_buf << u8(0x80 | ((v >> 6) & 0x3F))
+		ctx.write_buf << u8(0x80 | (v & 0x3F))
+	} else {
+		ctx.write_buf << u8(0xF0 | (v >> 18))
+		ctx.write_buf << u8(0x80 | ((v >> 12) & 0x3F))
+		ctx.write_buf << u8(0x80 | ((v >> 6) & 0x3F))
+		ctx.write_buf << u8(0x80 | (v & 0x3F))
+	}
+}
+
 fn (mut ctx TUIContext) flush() {
 	new_width := ctx.window_width()
 	new_height := ctx.window_height()
@@ -912,7 +943,7 @@ fn (mut ctx TUIContext) flush() {
 	mut term_style := ?Style(none)
 	mut cursor_x := -1
 	mut cursor_y := -1
-	mut write_buf := []u8{cap: ctx.data.width}
+	ctx.write_buf.clear()
 
 	for y in 0 .. ctx.data.height {
 		for x in 0 .. ctx.data.width {
@@ -924,29 +955,20 @@ fn (mut ctx TUIContext) flush() {
 			}
 
 			if can_diff && prev_data_slice[index] == cell {
-				if write_buf.len > 0 {
-					ctx.ref.write(write_buf.bytestr())
-					write_buf.clear()
-				}
+				ctx.flush_write_buf()
 				cursor_x = -1
 				continue
 			}
 
 			if cursor_x != x || cursor_y != y {
-				if write_buf.len > 0 {
-					ctx.ref.write(write_buf.bytestr())
-					write_buf.clear()
-				}
+				ctx.flush_write_buf()
 				ctx.ref.set_cursor_position(x + 1, y + 1)
 				cursor_x = x
 				cursor_y = y
 			}
 
 			if cell.style != term_style {
-				if write_buf.len > 0 {
-					ctx.ref.write(write_buf.bytestr())
-					write_buf.clear()
-				}
+				ctx.flush_write_buf()
 				if prev_style := term_style {
 					ctx.ref.write(prev_style.close())
 				}
@@ -972,10 +994,7 @@ fn (mut ctx TUIContext) flush() {
 			}
 
 			if !opt_color_eq(want_fg, term_fg) {
-				if write_buf.len > 0 {
-					ctx.ref.write(write_buf.bytestr())
-					write_buf.clear()
-				}
+				ctx.flush_write_buf()
 				if c := want_fg {
 					ctx.ref.set_color(tui.Color{c.r, c.g, c.b})
 				} else {
@@ -984,10 +1003,7 @@ fn (mut ctx TUIContext) flush() {
 				term_fg = want_fg
 			}
 			if !opt_color_eq(want_bg, term_bg) {
-				if write_buf.len > 0 {
-					ctx.ref.write(write_buf.bytestr())
-					write_buf.clear()
-				}
+				ctx.flush_write_buf()
 				if c := want_bg {
 					ctx.ref.set_bg_color(tui.Color{c.r, c.g, c.b})
 				} else {
@@ -996,17 +1012,16 @@ fn (mut ctx TUIContext) flush() {
 				term_bg = want_bg
 			}
 
-			s := cell.str()
-			for b in s.bytes() {
-				write_buf << b
+			// Encode rune directly as UTF-8 bytes — no string allocation.
+			if r := cell.data {
+				ctx.encode_rune_utf8(r)
+			} else {
+				ctx.write_buf << u8(` `)
 			}
 
 			cursor_x += cell.visual_width
 		}
-		if write_buf.len > 0 {
-			ctx.ref.write(write_buf.bytestr())
-			write_buf.clear()
-		}
+		ctx.flush_write_buf()
 	}
 
 	if s := term_style {
