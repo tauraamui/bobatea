@@ -139,9 +139,35 @@ pub enum EventType {
 	mouse_drag
 	mouse_scroll
 	key_down
+	key_up
 	resized
 	focused
 	unfocused
+}
+
+struct TerminalCapabilities {
+	enable_ansi256            bool = true
+	supports_alternate_buffer bool = true
+	supports_sgr_mouse        bool = true
+	supports_sync_updates     bool = true
+	supports_window_title     bool = true
+}
+
+fn terminal_capabilities_for(term_name string) TerminalCapabilities {
+	if term_name == 'linux' {
+		return TerminalCapabilities{
+			enable_ansi256:            false
+			supports_alternate_buffer: false
+			supports_sgr_mouse:        false
+			supports_sync_updates:     false
+			supports_window_title:     false
+		}
+	}
+	return TerminalCapabilities{}
+}
+
+fn current_terminal_capabilities() TerminalCapabilities {
+	return terminal_capabilities_for(os.getenv('TERM'))
 }
 
 @[flag]
@@ -174,10 +200,15 @@ pub struct Context {
 pub:
 	cfg Config // the initial configuration, passed to ui.init()
 mut:
-	print_buf  []u8
-	paused     bool
-	enable_su  bool
-	enable_rgb bool
+	print_buf                 []u8
+	paused                    bool
+	enable_su                 bool
+	enable_rgb                bool
+	enable_ansi256            bool = true
+	supports_alternate_buffer bool = true
+	supports_sgr_mouse        bool = true
+	supports_sync_updates     bool = true
+	supports_window_title     bool = true
 pub mut:
 	frame_count    u64
 	window_width   int
@@ -204,6 +235,7 @@ pub:
 	window_title         string
 	hide_cursor          bool
 	capture_events       bool
+	mouse_enabled        bool
 	use_alternate_buffer bool = true
 	skip_init_checks     bool
 	// All kill signals to set up exit listeners on:

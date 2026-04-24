@@ -115,7 +115,7 @@ fn (mut ctx Context) write_sgr_color(kind u8, c Color) {
 		ctx.print_buf << `;`
 		ctx.write_int_digits(int(c.b))
 		ctx.print_buf << `m`
-	} else {
+	} else if ctx.enable_ansi256 {
 		// \x1b[{kind};5;{ansi}m
 		ctx.print_buf << 0x1b
 		ctx.print_buf << `[`
@@ -125,7 +125,30 @@ fn (mut ctx Context) write_sgr_color(kind u8, c Color) {
 		ctx.print_buf << `;`
 		ctx.write_int_digits(rgb2ansi(c.r, c.g, c.b))
 		ctx.print_buf << `m`
+	} else {
+		// \x1b[{30|40+index}m - basic 8-color fallback (kind-8 = 30 for fg, 40 for bg)
+		ctx.print_buf << 0x1b
+		ctx.print_buf << `[`
+		ctx.write_int_digits(int(kind) - 8 + rgb2basic_ansi(int(c.r), int(c.g), int(c.b)))
+		ctx.print_buf << `m`
 	}
+}
+
+fn rgb2basic_ansi(r int, g int, b int) int {
+	mut best_index := 0
+	mut best_distance := -1
+	for i in 0 .. 8 {
+		ref := color_table[i]
+		dr := r - int((ref >> 16) & 0xff)
+		dg := g - int((ref >> 8) & 0xff)
+		db := b - int(ref & 0xff)
+		distance := dr * dr + dg * dg + db * db
+		if best_distance == -1 || distance < best_distance {
+			best_distance = distance
+			best_index = i
+		}
+	}
+	return best_index
 }
 
 // set_color sets the current foreground color used by any succeeding `draw_*` calls.
@@ -167,6 +190,9 @@ pub fn (mut ctx Context) clear() {
 // set_window_title sets the string `s` as the window title.
 @[inline]
 pub fn (mut ctx Context) set_window_title(s string) {
+	if !ctx.supports_window_title {
+		return
+	}
 	print('\x1b]0;${s}\x07')
 	flush_stdout()
 }
