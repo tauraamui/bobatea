@@ -93,8 +93,8 @@ fn (mut ctx GUIContext) draw_text(x int, y int, text string) {
 	if ctx.text_draws_since_last_pass == 0 {
 		ctx.gg.begin()
 	}
-	ctx.gg.draw_text((font_size / 2) + x - (font_size / 2), (y * font_size) - font_size,
-		text, ctx.txt_cfg)
+	ctx.gg.draw_text((font_size / 2) + x - (font_size / 2), (y * font_size) - font_size, text,
+		ctx.txt_cfg)
 	if ctx.text_draws_since_last_pass >= 1000 {
 		ctx.gg.end(how: .passthru)
 		ctx.text_draws_since_last_pass = 0

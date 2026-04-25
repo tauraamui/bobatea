@@ -1,9 +1,43 @@
 module bobatea
 
-fn test_context_offset_push_affects_apply() {
-	mut t_ctx := TUIContext{
-		ref: unsafe { nil }
+import lib.term.ui as tui
+
+struct TestNativeContext {
+pub mut:
+	window_width  int = 100
+	window_height int = 100
+}
+
+fn (mut ctx TestNativeContext) set_cursor_position(x int, y int) {}
+
+fn (mut ctx TestNativeContext) show_cursor() {}
+
+fn (mut ctx TestNativeContext) hide_cursor() {}
+
+fn (mut ctx TestNativeContext) set_color(c tui.Color) {}
+
+fn (mut ctx TestNativeContext) set_bg_color(c tui.Color) {}
+
+fn (mut ctx TestNativeContext) reset_color() {}
+
+fn (mut ctx TestNativeContext) reset_bg_color() {}
+
+fn (mut ctx TestNativeContext) write(c string) {}
+
+fn (mut ctx TestNativeContext) clear() {}
+
+fn (mut ctx TestNativeContext) flush() {}
+
+fn (mut ctx TestNativeContext) run() ! {}
+
+fn new_test_tui_context() TUIContext {
+	return TUIContext{
+		ref: TestNativeContext{}
 	}
+}
+
+fn test_context_offset_push_affects_apply() {
+	mut t_ctx := new_test_tui_context()
 	t_ctx.setup_grid()!
 
 	t_ctx.push_offset(Offset{ x: 10, y: 21 })
@@ -18,9 +52,7 @@ fn test_context_offset_push_affects_apply() {
 }
 
 fn test_context_sequential_offset_last_on_first_off() {
-	mut t_ctx := TUIContext{
-		ref: unsafe { nil }
-	}
+	mut t_ctx := new_test_tui_context()
 	t_ctx.setup_grid()!
 
 	mut xx, mut yy := apply_offsets(t_ctx.offsets, 0, 0)
@@ -77,9 +109,7 @@ fn test_context_sequential_offset_last_on_first_off() {
 }
 
 fn test_context_offset_clear_from_offset() {
-	mut t_ctx := TUIContext{
-		ref: unsafe { nil }
-	}
+	mut t_ctx := new_test_tui_context()
 	t_ctx.setup_grid()!
 
 	t_ctx.push_offset(Offset{ x: 1, y: 1 })
@@ -102,9 +132,7 @@ fn test_context_offset_clear_from_offset() {
 }
 
 fn test_context_offset_clear_to_offset() {
-	mut t_ctx := TUIContext{
-		ref: unsafe { nil }
-	}
+	mut t_ctx := new_test_tui_context()
 	t_ctx.setup_grid()!
 
 	t_ctx.push_offset(Offset{ x: 1, y: 1 })
@@ -127,9 +155,7 @@ fn test_context_offset_clear_to_offset() {
 }
 
 fn test_context_offset_compact() {
-	mut t_ctx := TUIContext{
-		ref: unsafe { nil }
-	}
+	mut t_ctx := new_test_tui_context()
 	t_ctx.setup_grid()!
 
 	t_ctx.push_offset(Offset{ x: 1, y: 1 })
@@ -143,9 +169,7 @@ fn test_context_offset_compact() {
 }
 
 fn test_context_offset_compact_from() {
-	mut t_ctx := TUIContext{
-		ref: unsafe { nil }
-	}
+	mut t_ctx := new_test_tui_context()
 	t_ctx.setup_grid()!
 
 	t_ctx.push_offset(Offset{ x: 1, y: 1 })

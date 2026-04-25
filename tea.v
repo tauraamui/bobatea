@@ -314,6 +314,7 @@ fn event(e Event, mut app App) {
 			Msg(NoopMsg{})
 		}
 	}
+
 	// Queue the event instead of handling immediately
 	app.send(msg)
 }

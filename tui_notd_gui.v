@@ -391,6 +391,9 @@ fn (mut ctx TUIContext) render_debug() bool {
 }
 
 fn (ctx TUIContext) window_width() int {
+	if isnil(ctx.ref) {
+		return 100
+	}
 	if ctx.ref.window_width <= 0 {
 		return 100
 	}
@@ -398,6 +401,9 @@ fn (ctx TUIContext) window_width() int {
 }
 
 fn (ctx TUIContext) window_height() int {
+	if isnil(ctx.ref) {
+		return 100
+	}
 	if ctx.ref.window_height <= 0 {
 		return 100
 	}
@@ -665,6 +671,7 @@ fn (mut ctx TUIContext) reset() {
 	ctx.fg_color = none
 	ctx.bg_color = none
 }
+
 fn (mut ctx TUIContext) clear() {
 	ctx.data.resize(ctx.window_width(), ctx.window_height()) or {}
 	for i in 0 .. ctx.data.data.len {
@@ -918,9 +925,7 @@ fn (mut ctx TUIContext) flush() {
 		}
 	}
 
-	ctx.data.resize(new_width, new_height) or {
-		panic('flush failed to resize grid -> ${err}')
-	}
+	ctx.data.resize(new_width, new_height) or { panic('flush failed to resize grid -> ${err}') }
 	ctx.ref.hide_cursor()
 
 	// Synchronized output: begin batch to prevent tearing.
@@ -929,8 +934,7 @@ fn (mut ctx TUIContext) flush() {
 	mut prev_data_slice := []Cell{}
 	mut can_diff := false
 	if prev_grid := ctx.prev_data {
-		if prev_grid.width == ctx.data.width
-			&& prev_grid.height == ctx.data.height {
+		if prev_grid.width == ctx.data.width && prev_grid.height == ctx.data.height {
 			unsafe {
 				prev_data_slice = prev_grid.data
 			}
@@ -1055,8 +1059,7 @@ fn (mut ctx TUIContext) flush() {
 	ctx.ref.flush()
 
 	if prev_grid := ctx.prev_data {
-		if prev_grid.width == ctx.data.width
-			&& prev_grid.height == ctx.data.height {
+		if prev_grid.width == ctx.data.width && prev_grid.height == ctx.data.height {
 			mut swapped_prev := prev_grid
 			unsafe {
 				swapped_prev.data = ctx.data.data
@@ -1072,4 +1075,3 @@ fn (mut ctx TUIContext) flush() {
 		ctx.prev_data = ctx.data.clone()
 	}
 }
-

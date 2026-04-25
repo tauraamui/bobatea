@@ -1,7 +1,5 @@
 module bobatea
 
-import lib.term.ui as tui
-
 fn test_resolve_key_msg_ctrl_and_a() {
 	assert resolve_key_msg(Event{
 		modifiers: .ctrl
