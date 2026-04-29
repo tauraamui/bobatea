@@ -421,3 +421,45 @@ fn test_single_char_ctrl_and_c() {
 	assert e.modifiers == .ctrl
 	assert e.code == .c
 }
+
+fn test_resolve_key_msg_modifier_press_labels() {
+	assert resolve_key_msg(Event{ typ: .key_down, code: .left_shift }).string() == 'shift_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .right_shift }).string() == 'shift_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .left_ctrl }).string() == 'ctrl_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .right_ctrl }).string() == 'ctrl_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .left_alt }).string() == 'alt_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .right_alt }).string() == 'alt_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .left_super }).string() == 'super_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .right_super }).string() == 'super_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .left_hyper }).string() == 'hyper_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .left_meta }).string() == 'meta_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .caps_lock }).string() == 'caps_lock_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .num_lock }).string() == 'num_lock_down'
+	assert resolve_key_msg(Event{ typ: .key_down, code: .scroll_lock }).string() == 'scroll_lock_down'
+
+	assert resolve_key_msg(Event{ typ: .key_down, code: .left_shift }).k_type == .special
+	assert resolve_key_msg(Event{ typ: .key_down, code: .left_ctrl }).k_type == .special
+	assert resolve_key_msg(Event{ typ: .key_down, code: .caps_lock }).k_type == .special
+}
+
+fn test_resolve_key_msg_modifier_release_labels() {
+	assert resolve_key_msg(Event{ typ: .key_up, code: .left_shift }).string() == 'shift_up'
+	assert resolve_key_msg(Event{ typ: .key_up, code: .right_shift }).string() == 'shift_up'
+	assert resolve_key_msg(Event{ typ: .key_up, code: .left_ctrl }).string() == 'ctrl_up'
+	assert resolve_key_msg(Event{ typ: .key_up, code: .left_alt }).string() == 'alt_up'
+	assert resolve_key_msg(Event{ typ: .key_up, code: .left_super }).string() == 'super_up'
+	assert resolve_key_msg(Event{ typ: .key_up, code: .caps_lock }).string() == 'caps_lock_up'
+}
+
+fn test_resolve_key_msg_modifier_ignores_modifier_flags() {
+	// When the kitty protocol reports a modifier-key press, the modifier
+	// flags reflect the key itself being held. The label should not gain a
+	// `ctrl+` (or similar) prefix from those flags.
+	msg := resolve_key_msg(Event{
+		typ:       .key_down
+		code:      .left_shift
+		modifiers: .shift
+	})
+	assert msg.string() == 'shift_down'
+	assert msg.k_type == .special
+}

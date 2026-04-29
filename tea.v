@@ -295,6 +295,15 @@ fn event(e Event, mut app App) {
 		.key_down {
 			Msg(resolve_key_msg(e))
 		}
+		.key_up {
+			// Only modifier / lock key releases reach the app — normal key
+			// releases stay suppressed to preserve existing app behavior.
+			if modifier_key_label(e.code) != '' {
+				Msg(resolve_key_msg(e))
+			} else {
+				Msg(NoopMsg{})
+			}
+		}
 		.mouse_scroll {
 			Msg(NoopMsg{})
 		}

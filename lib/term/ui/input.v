@@ -114,6 +114,23 @@ pub enum KeyCode {
 	f22                  = 311
 	f23                  = 312
 	f24                  = 313
+	// Modifier keys reported as standalone press/release events by terminals
+	// implementing the kitty keyboard protocol or by Windows native console input.
+	left_shift           = 320
+	right_shift          = 321
+	left_ctrl            = 322
+	right_ctrl           = 323
+	left_alt             = 324
+	right_alt            = 325
+	left_super           = 326
+	right_super          = 327
+	left_hyper           = 328
+	right_hyper          = 329
+	left_meta            = 330
+	right_meta           = 331
+	caps_lock            = 332
+	num_lock             = 333
+	scroll_lock          = 334
 }
 
 pub enum Direction {

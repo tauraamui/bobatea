@@ -63,9 +63,52 @@ const special_keycodes = [
 	.f22,
 	.f23,
 	.f24,
+	.left_shift,
+	.right_shift,
+	.left_ctrl,
+	.right_ctrl,
+	.left_alt,
+	.right_alt,
+	.left_super,
+	.right_super,
+	.left_hyper,
+	.right_hyper,
+	.left_meta,
+	.right_meta,
+	.caps_lock,
+	.num_lock,
+	.scroll_lock,
 ]
 
+// modifier_key_label returns the side-agnostic label for a standalone modifier
+// or lock key (e.g. .left_shift -> 'shift'). Returns '' for non-modifier codes.
+fn modifier_key_label(code tui.KeyCode) string {
+	return match code {
+		.left_shift, .right_shift { 'shift' }
+		.left_ctrl, .right_ctrl { 'ctrl' }
+		.left_alt, .right_alt { 'alt' }
+		.left_super, .right_super { 'super' }
+		.left_hyper, .right_hyper { 'hyper' }
+		.left_meta, .right_meta { 'meta' }
+		.caps_lock { 'caps_lock' }
+		.num_lock { 'num_lock' }
+		.scroll_lock { 'scroll_lock' }
+		else { '' }
+	}
+}
+
 fn resolve_key_msg(e Event) KeyMsg {
+	// Standalone modifier / lock key reports surface as `<name>_down` / `<name>_up`.
+	// They must never reach the runes path or they leak into INSERT-mode buffers.
+	mod_label := modifier_key_label(e.code)
+	if mod_label != '' {
+		suffix := if e.typ == .key_up { '_up' } else { '_down' }
+		return KeyMsg{
+			alt:    false
+			runes:  '${mod_label}${suffix}'.runes()
+			k_type: .special
+		}
+	}
 	// if modifiers is either ctrl or shift then the only character rep field we want to pay attention to
 	// is `code`.
 	prefix := if e.modifiers.has(.ctrl) { 'ctrl+' } else { '' }

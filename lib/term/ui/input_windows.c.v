@@ -195,7 +195,11 @@ fn (mut ctx Context) parse_events() {
 					C.VK_BACK { KeyCode.backspace }
 					C.VK_RETURN { KeyCode.enter }
 					C.VK_PRIOR { KeyCode.page_up }
-					14...20 { KeyCode.null }
+					16 { KeyCode.left_shift } // VK_SHIFT (generic)
+					17 { KeyCode.left_ctrl } // VK_CONTROL (generic)
+					18 { KeyCode.left_alt } // VK_MENU (generic)
+					20 { KeyCode.caps_lock } // VK_CAPITAL
+					14, 15, 19 { KeyCode.null }
 					C.VK_NEXT { KeyCode.page_down }
 					C.VK_END { KeyCode.end }
 					C.VK_HOME { KeyCode.home }
@@ -206,9 +210,19 @@ fn (mut ctx Context) parse_events() {
 					C.VK_INSERT { KeyCode.insert }
 					C.VK_DELETE { KeyCode.delete }
 					65...90 { unsafe { KeyCode(ch + 32) } } // letters
-					91...93 { KeyCode.null } // special keys
+					91 { KeyCode.left_super } // VK_LWIN
+					92 { KeyCode.right_super } // VK_RWIN
+					93 { KeyCode.null } // VK_APPS
 					96...105 { unsafe { KeyCode(ch - 48) } } // numpad numbers
 					112...135 { unsafe { KeyCode(ch + 178) } } // f1 - f24
+					144 { KeyCode.num_lock } // VK_NUMLOCK
+					145 { KeyCode.scroll_lock } // VK_SCROLL
+					160 { KeyCode.left_shift } // VK_LSHIFT
+					161 { KeyCode.right_shift } // VK_RSHIFT
+					162 { KeyCode.left_ctrl } // VK_LCONTROL
+					163 { KeyCode.right_ctrl } // VK_RCONTROL
+					164 { KeyCode.left_alt } // VK_LMENU
+					165 { KeyCode.right_alt } // VK_RMENU
 					else { unsafe { KeyCode(ascii) } }
 				}
 

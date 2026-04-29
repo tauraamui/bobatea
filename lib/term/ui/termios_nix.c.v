@@ -541,6 +541,31 @@ fn utf8_from_reported_text(param string) string {
 	return builder.str()
 }
 
+// key_code_from_kitty_modifier_codepoint maps kitty keyboard protocol PUA
+// codepoints for standalone modifier and lock keys to their KeyCode value.
+// Returns .null for codepoints outside that range.
+@[inline]
+fn key_code_from_kitty_modifier_codepoint(codepoint int) KeyCode {
+	return match codepoint {
+		57358 { KeyCode.caps_lock }
+		57359 { KeyCode.scroll_lock }
+		57360 { KeyCode.num_lock }
+		57441 { KeyCode.left_shift }
+		57442 { KeyCode.left_ctrl }
+		57443 { KeyCode.left_alt }
+		57444 { KeyCode.left_super }
+		57445 { KeyCode.left_hyper }
+		57446 { KeyCode.left_meta }
+		57447 { KeyCode.right_shift }
+		57448 { KeyCode.right_ctrl }
+		57449 { KeyCode.right_alt }
+		57450 { KeyCode.right_super }
+		57451 { KeyCode.right_hyper }
+		57452 { KeyCode.right_meta }
+		else { KeyCode.null }
+	}
+}
+
 @[inline]
 fn event_from_reported_key(codepoint int, raw string, modifiers Modifiers, event_type EventType, text string) &Event {
 	mut utf8 := raw
@@ -550,6 +575,18 @@ fn event_from_reported_key(codepoint int, raw string, modifiers Modifiers, event
 	mut ascii := u8(0)
 	if text.len == 1 {
 		ascii = text[0]
+	}
+	// Standalone modifier / lock key reports — surface them with a real KeyCode
+	// so consumers can match on them instead of falling through to utf8 fallback
+	// (which leaks the raw escape sequence as literal text in INSERT-mode editors).
+	mod_code := key_code_from_kitty_modifier_codepoint(codepoint)
+	if mod_code != .null {
+		return &Event{
+			typ:       event_type
+			code:      mod_code
+			utf8:      ''
+			modifiers: modifiers
+		}
 	}
 	if codepoint <= 0 || codepoint > 0x10ffff {
 		return &Event{
