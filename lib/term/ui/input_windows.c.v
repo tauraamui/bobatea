@@ -12,6 +12,7 @@ const buf_size = 64
 __global ctx_ptr = &Context(unsafe { nil })
 
 __global stdin_at_startup = u32(0)
+__global stdout_at_startup = u32(0)
 
 struct ExtraContext {
 mut:
@@ -30,6 +31,7 @@ fn restore_terminal_state() {
 			flush_stdout()
 		}
 		C.bobatea_SetConsoleMode(ctx_ptr.stdin_handle, stdin_at_startup)
+		C.bobatea_SetConsoleMode(ctx_ptr.stdout_handle, stdout_at_startup)
 	}
 	load_title()
 	os.flush()
@@ -54,10 +56,27 @@ fn (mut ctx Context) console_setup() ! {
 	if stdin_handle == C.INVALID_HANDLE_VALUE {
 		return error('could not get stdin handle')
 	}
+	if stdout_handle == C.INVALID_HANDLE_VALUE {
+		return error('could not get stdout handle')
+	}
 	// save the current input mode, to be restored on exit
 	if C.bobatea_GetConsoleMode(stdin_handle, &stdin_at_startup) == 0 {
 		return error('could not get stdin console mode')
 	}
+
+	// save the current output mode, to be restored on exit
+	if C.bobatea_GetConsoleMode(stdout_handle, &stdout_at_startup) == 0 {
+		return error('could not get stdout console mode')
+	}
+	mut stdout_mode := stdout_at_startup
+	stdout_mode |= u32(C.ENABLE_PROCESSED_OUTPUT)
+	stdout_mode |= u32(C.ENABLE_WRAP_AT_EOL_OUTPUT)
+	stdout_mode |= u32(C.ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+	if C.bobatea_SetConsoleMode(stdout_handle, stdout_mode) == 0 {
+		return error('could not enable virtual terminal processing')
+	}
+	ctx.enable_ansi256 = true
+	ctx.enable_rgb = true
 
 	// enable extended input flags (see https://stackoverflow.com/a/46802726)
 	// 0x80 == C.ENABLE_EXTENDED_FLAGS
