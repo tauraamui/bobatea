@@ -47,7 +47,7 @@ mut:
 }
 
 // ref - https://docs.microsoft.com/en-us/windows/console/getconsolescreenbufferinfo
-fn C.GetConsoleScreenBufferInfo(handle C.HANDLE, info &C.CONSOLE_SCREEN_BUFFER_INFO) bool
+fn C.bobatea_GetConsoleScreenBufferInfo(handle C.HANDLE, info &C.CONSOLE_SCREEN_BUFFER_INFO) int
 
 // ref - https://docs.microsoft.com/en-us/windows/console/setconsoletitle
 fn C.SetConsoleTitle(title &u16) bool
@@ -63,7 +63,7 @@ fn C.ScrollConsoleScreenBuffer(output C.HANDLE, scroll_rect &C.SMALL_RECT, clip_
 pub fn get_terminal_size() (int, int) {
 	if os.is_atty(1) > 0 && os.getenv('TERM') != 'dumb' {
 		info := C.CONSOLE_SCREEN_BUFFER_INFO{}
-		if C.GetConsoleScreenBufferInfo(C.GetStdHandle(C.STD_OUTPUT_HANDLE), &info) {
+		if C.bobatea_GetConsoleScreenBufferInfo(C.GetStdHandle(C.STD_OUTPUT_HANDLE), &info) != 0 {
 			columns := int(info.srWindow.Right - info.srWindow.Left + 1)
 			rows := int(info.srWindow.Bottom - info.srWindow.Top + 1)
 			return columns, rows
@@ -77,7 +77,7 @@ pub fn get_cursor_position() !Coord {
 	mut res := Coord{}
 	if os.is_atty(1) > 0 && os.getenv('TERM') != 'dumb' {
 		info := C.CONSOLE_SCREEN_BUFFER_INFO{}
-		if C.GetConsoleScreenBufferInfo(C.GetStdHandle(C.STD_OUTPUT_HANDLE), &info) {
+		if C.bobatea_GetConsoleScreenBufferInfo(C.GetStdHandle(C.STD_OUTPUT_HANDLE), &info) != 0 {
 			res.x = info.dwCursorPosition.X
 			res.y = info.dwCursorPosition.Y
 		} else {
@@ -109,7 +109,7 @@ pub fn clear() bool {
 	mut fill := C.CHAR_INFO{}
 
 	// Get the number of character cells in the current buffer.
-	if !C.GetConsoleScreenBufferInfo(hconsole, &csbi) {
+	if C.bobatea_GetConsoleScreenBufferInfo(hconsole, &csbi) == 0 {
 		return false
 	}
 	// Scroll the rectangle of the entire buffer.

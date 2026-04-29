@@ -29,7 +29,7 @@ fn restore_terminal_state() {
 			print('\x1b[?1049l')
 			flush_stdout()
 		}
-		C.SetConsoleMode(ctx_ptr.stdin_handle, stdin_at_startup)
+		C.bobatea_SetConsoleMode(ctx_ptr.stdin_handle, stdin_at_startup)
 	}
 	load_title()
 	os.flush()
@@ -55,13 +55,13 @@ fn (mut ctx Context) console_setup() ! {
 		return error('could not get stdin handle')
 	}
 	// save the current input mode, to be restored on exit
-	if !C.GetConsoleMode(stdin_handle, &stdin_at_startup) {
+	if C.bobatea_GetConsoleMode(stdin_handle, &stdin_at_startup) == 0 {
 		return error('could not get stdin console mode')
 	}
 
 	// enable extended input flags (see https://stackoverflow.com/a/46802726)
 	// 0x80 == C.ENABLE_EXTENDED_FLAGS
-	if !C.SetConsoleMode(stdin_handle, 0x80) {
+	if C.bobatea_SetConsoleMode(stdin_handle, 0x80) == 0 {
 		return error('could not set raw input mode')
 	}
 	mut input_mode := u32(C.ENABLE_WINDOW_INPUT)
@@ -69,7 +69,7 @@ fn (mut ctx Context) console_setup() ! {
 		input_mode |= u32(C.ENABLE_MOUSE_INPUT)
 	}
 	// enable window input and optionally mouse input events.
-	if !C.SetConsoleMode(stdin_handle, input_mode | 0x0010) {
+	if C.bobatea_SetConsoleMode(stdin_handle, input_mode | 0x0010) == 0 {
 		return error('could not set raw input mode')
 	}
 	// store the current title, so restore_terminal_state can get it back
@@ -173,7 +173,7 @@ pub fn (mut ctx Context) run() ! {
 
 fn (mut ctx Context) parse_events() {
 	nr_events := u32(0)
-	if !C.GetNumberOfConsoleInputEvents(ctx.stdin_handle, &nr_events) {
+	if C.bobatea_GetNumberOfConsoleInputEvents(ctx.stdin_handle, &nr_events) == 0 {
 		panic('could not get number of events in stdin')
 	}
 	if nr_events < 1 {
@@ -181,7 +181,7 @@ fn (mut ctx Context) parse_events() {
 	}
 
 	// print('$nr_events | ')
-	if !C.ReadConsoleInput(ctx.stdin_handle, &ctx.read_buf[0], buf_size, &nr_events) {
+	if C.bobatea_ReadConsoleInput(ctx.stdin_handle, &ctx.read_buf[0], buf_size, &nr_events) == 0 {
 		panic('could not read from stdin')
 	}
 	for i in 0 .. nr_events {
@@ -263,7 +263,7 @@ fn (mut ctx Context) parse_events() {
 			C.MOUSE_EVENT {
 				e := unsafe { ctx.read_buf[i].Event.MouseEvent }
 				sb_info := C.CONSOLE_SCREEN_BUFFER_INFO{}
-				if !C.GetConsoleScreenBufferInfo(ctx.stdout_handle, &sb_info) {
+				if C.bobatea_GetConsoleScreenBufferInfo(ctx.stdout_handle, &sb_info) == 0 {
 					panic('could not get screenbuffer info')
 				}
 				x := e.dwMousePosition.X + 1
@@ -356,7 +356,7 @@ fn (mut ctx Context) parse_events() {
 			C.WINDOW_BUFFER_SIZE_EVENT {
 				// e := unsafe { ctx.read_buf[i].Event.WindowBufferSizeEvent }
 				sb := C.CONSOLE_SCREEN_BUFFER_INFO{}
-				if !C.GetConsoleScreenBufferInfo(ctx.stdout_handle, &sb) {
+				if C.bobatea_GetConsoleScreenBufferInfo(ctx.stdout_handle, &sb) == 0 {
 					panic('could not get screenbuffer info')
 				}
 				w := sb.srWindow.Right - sb.srWindow.Left + 1
