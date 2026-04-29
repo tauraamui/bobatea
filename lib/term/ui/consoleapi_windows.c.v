@@ -79,8 +79,12 @@ mut:
 	dwMaximumWindowSize C.COORD
 }
 
-fn C.ReadConsoleInput(hConsoleInput C.HANDLE, lpBuffer &C.INPUT_RECORD, nLength u32, lpNumberOfEventsRead &u32) bool
+fn C.bobatea_ReadConsoleInput(hConsoleInput C.HANDLE, lpBuffer &C.INPUT_RECORD, nLength u32, lpNumberOfEventsRead &u32) int
 
-fn C.GetNumberOfConsoleInputEvents(hConsoleInput C.HANDLE, lpcNumberOfEvents &u32) bool
+fn C.bobatea_GetNumberOfConsoleInputEvents(hConsoleInput C.HANDLE, lpcNumberOfEvents &u32) int
 
-fn C.GetConsoleScreenBufferInfo(handle C.HANDLE, info &C.CONSOLE_SCREEN_BUFFER_INFO) bool
+fn C.bobatea_GetConsoleScreenBufferInfo(handle C.HANDLE, info &C.CONSOLE_SCREEN_BUFFER_INFO) int
+
+fn C.bobatea_GetConsoleMode(console_handle C.HANDLE, mode &u32) int
+
+fn C.bobatea_SetConsoleMode(console_handle C.HANDLE, mode u32) int

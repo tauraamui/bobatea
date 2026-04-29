@@ -1,19 +1,17 @@
 module bobatea
 
-$if windows {
-	#include <windows.h>
-}
+#flag windows @VMODROOT/windows_wrappers.c
 
-fn C.SetConsoleOutputCP(wCodePageID u32)
-fn C.GetConsoleOutputCP() u32
-fn C.SetConsoleCP(wCodePageID u32)
-fn C.GetConsoleCP() u32
+fn C.bobatea_SetConsoleOutputCP(code_page_id u32) int
+fn C.bobatea_GetConsoleOutputCP() u32
+fn C.bobatea_SetConsoleCP(code_page_id u32) int
+fn C.bobatea_GetConsoleCP() u32
 
 fn switch_codepage_to_65001() {
-	C.SetConsoleOutputCP(65001)
-	C.SetConsoleCP(65001)
-	codepage_output := C.GetConsoleOutputCP()
-	codepage_input := C.GetConsoleCP()
-	assert codepage_output == 65001
-	assert codepage_input == 65001
+	C.bobatea_SetConsoleOutputCP(65001)
+	C.bobatea_SetConsoleCP(65001)
+	codepage_output := C.bobatea_GetConsoleOutputCP()
+	codepage_input := C.bobatea_GetConsoleCP()
+	assert codepage_output == u32(65001)
+	assert codepage_input == u32(65001)
 }
