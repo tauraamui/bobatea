@@ -114,8 +114,7 @@ pub enum KeyCode {
 	f22                  = 311
 	f23                  = 312
 	f24                  = 313
-	// Modifier keys reported as standalone press/release events by terminals
-	// implementing the kitty keyboard protocol or by Windows native console input.
+	// Modifier keys reported as standalone press/release events by Windows native console input.
 	left_shift           = 320
 	right_shift          = 321
 	left_ctrl            = 322

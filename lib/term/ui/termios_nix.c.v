@@ -4,7 +4,6 @@
 module ui
 
 import os
-import strings
 import time
 import term.termios
 
@@ -16,8 +15,6 @@ pub struct C.winsize {
 }
 
 const termios_at_startup = get_termios()
-
-const kitty_keyboard_flags = 0b10 | 0b1000 | 0b10000
 
 @[inline]
 fn get_termios() termios.Termios {
@@ -122,11 +119,6 @@ fn (mut ctx Context) termios_setup() ! {
 		print('\x1b[2J\x1b[3J\x1b[1;1H')
 		flush_stdout()
 	}
-	if ctx.cfg.capture_events {
-		// Ask supporting terminals to report press/repeat/release in CSI-u form.
-		print('\x1b[>${kitty_keyboard_flags}u')
-		flush_stdout()
-	}
 	ctx.window_height, ctx.window_width = get_terminal_size()
 
 	// Reset console on exit
@@ -213,10 +205,6 @@ fn termios_reset() {
 	mut startup := termios_at_startup
 	termios.tcsetattr(C.STDIN_FILENO, C.TCSAFLUSH, mut startup)
 	c := ctx_ptr
-	if unsafe { c != 0 } && c.cfg.capture_events {
-		// Pop the keyboard mode stack before leaving the current screen.
-		print('\x1b[<u')
-	}
 	print('\x1b[?1003l\x1b[?1006l\x1b[?1004l\x1b[?25h')
 	flush_stdout()
 	if unsafe { c != 0 } && c.cfg.use_alternate_buffer {
@@ -526,46 +514,6 @@ fn parse_key_report_param(param string) (Modifiers, EventType) {
 	return modifiers, event_type
 }
 
-fn utf8_from_reported_text(param string) string {
-	if param.len == 0 {
-		return ''
-	}
-	mut builder := strings.new_builder(param.len)
-	for part in param.split(':') {
-		codepoint := part.int()
-		if codepoint <= 0 || codepoint > 0x10ffff {
-			continue
-		}
-		builder.write_string(utf32_to_str(u32(codepoint)))
-	}
-	return builder.str()
-}
-
-// key_code_from_kitty_modifier_codepoint maps kitty keyboard protocol PUA
-// codepoints for standalone modifier and lock keys to their KeyCode value.
-// Returns .null for codepoints outside that range.
-@[inline]
-fn key_code_from_kitty_modifier_codepoint(codepoint int) KeyCode {
-	return match codepoint {
-		57358 { KeyCode.caps_lock }
-		57359 { KeyCode.scroll_lock }
-		57360 { KeyCode.num_lock }
-		57441 { KeyCode.left_shift }
-		57442 { KeyCode.left_ctrl }
-		57443 { KeyCode.left_alt }
-		57444 { KeyCode.left_super }
-		57445 { KeyCode.left_hyper }
-		57446 { KeyCode.left_meta }
-		57447 { KeyCode.right_shift }
-		57448 { KeyCode.right_ctrl }
-		57449 { KeyCode.right_alt }
-		57450 { KeyCode.right_super }
-		57451 { KeyCode.right_hyper }
-		57452 { KeyCode.right_meta }
-		else { KeyCode.null }
-	}
-}
-
 @[inline]
 fn event_from_reported_key(codepoint int, raw string, modifiers Modifiers, event_type EventType, text string) &Event {
 	mut utf8 := raw
@@ -575,18 +523,6 @@ fn event_from_reported_key(codepoint int, raw string, modifiers Modifiers, event
 	mut ascii := u8(0)
 	if text.len == 1 {
 		ascii = text[0]
-	}
-	// Standalone modifier / lock key reports — surface them with a real KeyCode
-	// so consumers can match on them instead of falling through to utf8 fallback
-	// (which leaks the raw escape sequence as literal text in INSERT-mode editors).
-	mod_code := key_code_from_kitty_modifier_codepoint(codepoint)
-	if mod_code != .null {
-		return &Event{
-			typ:       event_type
-			code:      mod_code
-			utf8:      ''
-			modifiers: modifiers
-		}
 	}
 	if codepoint <= 0 || codepoint > 0x10ffff {
 		return &Event{
@@ -623,24 +559,6 @@ fn event_from_reported_key(codepoint int, raw string, modifiers Modifiers, event
 		utf8:      utf8
 		modifiers: modifiers
 	}
-}
-
-fn parse_csi_u_key_sequence(single string, buf string) &Event {
-	if buf.len < 4 || buf[0] != `[` || buf[buf.len - 1] != `u` {
-		return unsafe { nil }
-	}
-	parts := buf[1..buf.len - 1].split(';')
-	if parts.len < 1 || parts.len > 3 {
-		return unsafe { nil }
-	}
-	codepoint := parts[0].split(':')[0].int()
-	mut modifiers := unsafe { Modifiers(0) }
-	mut event_type := EventType.key_down
-	if parts.len > 1 {
-		modifiers, event_type = parse_key_report_param(parts[1])
-	}
-	text := if parts.len > 2 { utf8_from_reported_text(parts[2]) } else { '' }
-	return event_from_reported_key(codepoint, single, modifiers, event_type, text)
 }
 
 fn parse_modify_other_keys_sequence(single string, buf string) &Event {
@@ -885,10 +803,6 @@ fn escape_sequence(buf_ string) (&Event, int) {
 	//   Special key combinations
 	// ----------------------------
 
-	e := parse_csi_u_key_sequence(single, buf)
-	if unsafe { e != nil } {
-		return e, end
-	}
 	e2 := parse_modify_other_keys_sequence(single, buf)
 	if unsafe { e2 != nil } {
 		return e2, end
