@@ -542,11 +542,16 @@ fn (mut ctx TUIContext) write(c string) {
 
 		// When no explicit bg color is set, preserve the existing cell's
 		// bg color (e.g. from a prior draw_rect call).
+		existing_main := ctx.data.get(x, y) or { Cell{} }
 		resolved_bg := if _ := ctx.bg_color {
 			ctx.bg_color
 		} else {
-			existing := ctx.data.get(x, y) or { Cell{} }
-			existing.bg_color
+			existing_main.bg_color
+		}
+		resolved_fg := if _ := ctx.fg_color {
+			ctx.fg_color
+		} else {
+			existing_main.fg_color
 		}
 
 		// Set the main cell with the character
@@ -554,7 +559,7 @@ fn (mut ctx TUIContext) write(c string) {
 			data:            c_char
 			visual_width:    width
 			is_continuation: false
-			fg_color:        ctx.fg_color
+			fg_color:        resolved_fg
 			bg_color:        resolved_bg
 			style:           ctx.style
 		}) or { break }
@@ -562,17 +567,22 @@ fn (mut ctx TUIContext) write(c string) {
 		// Mark continuation cells for multi-width characters
 		for i in 1 .. width {
 			cont_x := cursor_pos.x + x_offset + i
+			existing_cont := ctx.data.get(cont_x, cursor_pos.y) or { Cell{} }
 			cont_bg := if _ := ctx.bg_color {
 				ctx.bg_color
 			} else {
-				existing := ctx.data.get(cont_x, cursor_pos.y) or { Cell{} }
-				existing.bg_color
+				existing_cont.bg_color
+			}
+			cont_fg := if _ := ctx.fg_color {
+				ctx.fg_color
+			} else {
+				existing_cont.fg_color
 			}
 			ctx.data.set(cont_x, cursor_pos.y, Cell{
 				data:            none
 				visual_width:    0
 				is_continuation: true
-				fg_color:        ctx.fg_color
+				fg_color:        cont_fg
 				bg_color:        cont_bg
 				style:           ctx.style
 			}) or { break }
