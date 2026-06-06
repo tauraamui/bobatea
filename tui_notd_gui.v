@@ -19,6 +19,7 @@ module bobatea
 
 import lib.term.ui as tui
 import arrays
+import strings
 
 struct Pos {
 mut:
@@ -177,7 +178,10 @@ fn (style Style) close() string {
 }
 
 struct Cell {
-	data            ?rune
+	// data holds the base rune plus any zero-width combiners (variation
+	// selectors, ZWJ, combining marks) that belong to the same grapheme.
+	// An empty slice represents an empty/blank cell.
+	data            []rune
 	visual_width    int  // account for runes which are unicode chars (multiple width chars)
 	is_continuation bool // true if this cell is part of a multi-width character
 	fg_color        ?Color
@@ -186,17 +190,13 @@ struct Cell {
 }
 
 fn (a Cell) == (b Cell) bool {
-	// if either cell has no data, they should only be equal if both have no data
-	// AND all other properties match exactly
-	a_has_data := if _ := a.data { true } else { false }
-	b_has_data := if _ := b.data { true } else { false }
-
-	if a_has_data != b_has_data {
+	if a.data.len != b.data.len {
 		return false
 	}
-
-	if a.data != b.data {
-		return false
+	for i in 0 .. a.data.len {
+		if a.data[i] != b.data[i] {
+			return false
+		}
 	}
 
 	// compare simple fields
@@ -256,8 +256,14 @@ fn (a Cell) == (b Cell) bool {
 }
 
 fn (cell Cell) str() string {
-	r := cell.data or { return ' ' }
-	return r.str()
+	if cell.data.len == 0 {
+		return ' '
+	}
+	mut sb := strings.new_builder(cell.data.len * 2)
+	for r in cell.data {
+		sb.write_string(r.str())
+	}
+	return sb.str()
 }
 
 enum CursorStyle as u8 {
@@ -510,6 +516,16 @@ fn rune_visual_width(r rune) int {
 	if r < 0x300 {
 		return 1
 	}
+	// Zero-width: combining marks, ZWJ, variation selectors, etc. These attach
+	// to the preceding grapheme rather than advancing the cursor.
+	if (r >= 0x0300 && r <= 0x036f) // combining diacritical marks
+		|| r == 0x200d // ZWJ
+		|| (r >= 0xfe00 && r <= 0xfe0f) // variation selectors
+		|| (r >= 0xfe20 && r <= 0xfe2f) // combining half marks
+		|| (r >= 0x1f3fb && r <= 0x1f3ff) // emoji skin tone modifiers
+		|| (r >= 0xe0100 && r <= 0xe01ef) { // variation selectors supplement
+		return 0
+	}
 	// East Asian wide characters and emoji — return width 2.
 	if r >= 0x1100
 		&& (r <= 0x115f || r == 0x2329 || r == 0x232a || (r >= 0x2e80 && r <= 0xa4cf && r != 0x303f)
@@ -527,15 +543,34 @@ fn rune_visual_width(r rune) int {
 fn (mut ctx TUIContext) write(c string) {
 	cursor_pos := ctx.cursor_pos
 	mut x_offset := 0
+	mut last_base_x := -1
 
 	for c_char in c.runes() {
 		width := rune_visual_width(c_char)
+
+		if width == 0 {
+			// Zero-width rune: attach to the most recently written base cell
+			// in this write() call so emoji presentation, skin tones, ZWJ
+			// sequences etc. survive to the terminal.
+			if last_base_x >= 0 {
+				existing := ctx.data.get(last_base_x, cursor_pos.y) or { continue }
+				mut combined := existing.data.clone()
+				combined << c_char
+				ctx.data.set(last_base_x, cursor_pos.y, Cell{
+					...existing
+					data: combined
+				}) or { break }
+			}
+			continue
+		}
+
 		x := cursor_pos.x + x_offset
 		y := cursor_pos.y
 
 		if clip_area := ctx.cached_clip_area {
 			if !clip_area.in_bounds(x, y) {
 				x_offset += width
+				last_base_x = -1
 				continue
 			}
 		}
@@ -556,13 +591,14 @@ fn (mut ctx TUIContext) write(c string) {
 
 		// Set the main cell with the character
 		ctx.data.set(x, y, Cell{
-			data:            c_char
+			data:            [c_char]
 			visual_width:    width
 			is_continuation: false
 			fg_color:        resolved_fg
 			bg_color:        resolved_bg
 			style:           ctx.style
 		}) or { break }
+		last_base_x = x
 
 		// Mark continuation cells for multi-width characters
 		for i in 1 .. width {
@@ -579,7 +615,7 @@ fn (mut ctx TUIContext) write(c string) {
 				existing_cont.fg_color
 			}
 			ctx.data.set(cont_x, cursor_pos.y, Cell{
-				data:            none
+				data:            []rune{}
 				visual_width:    0
 				is_continuation: true
 				fg_color:        cont_fg
@@ -699,7 +735,7 @@ fn (mut ctx TUIContext) clear_prev_data() {
 	// Fill with cells that have invalid/unique properties
 	for i in 0 .. invalid_grid.data.len {
 		invalid_grid.data[i] = Cell{
-			data:            `\0` // null character that won't appear in real content
+			data:            [rune(`\0`)] // null character that won't appear in real content
 			visual_width:    -1   // invalid width
 			is_continuation: false
 			fg_color:        Color{255, 0, 255} // magenta - unlikely color
@@ -879,13 +915,15 @@ fn (ctx TUIContext) screen_text() string {
 			if cell.is_continuation {
 				continue
 			}
-			if r := cell.data {
-				s := r.str()
-				for b in s.bytes() {
-					line << b
-				}
-			} else {
+			if cell.data.len == 0 {
 				line << u8(` `)
+			} else {
+				for r in cell.data {
+					s := r.str()
+					for b in s.bytes() {
+						line << b
+					}
+				}
 			}
 		}
 		lines << line.bytestr()
@@ -1026,11 +1064,13 @@ fn (mut ctx TUIContext) flush() {
 				term_bg = want_bg
 			}
 
-			// Encode rune directly as UTF-8 bytes — no string allocation.
-			if r := cell.data {
-				ctx.encode_rune_utf8(r)
-			} else {
+			// Encode rune(s) directly as UTF-8 bytes — no string allocation.
+			if cell.data.len == 0 {
 				ctx.write_buf << u8(` `)
+			} else {
+				for r in cell.data {
+					ctx.encode_rune_utf8(r)
+				}
 			}
 
 			cursor_x += cell.visual_width
