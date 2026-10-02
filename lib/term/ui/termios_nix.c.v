@@ -5,14 +5,10 @@ module ui
 
 import os
 import time
+import term
 import term.termios
 
 #include <signal.h>
-
-pub struct C.winsize {
-	ws_row u16
-	ws_col u16
-}
 
 const termios_at_startup = get_termios()
 
@@ -25,9 +21,10 @@ fn get_termios() termios.Termios {
 
 @[inline]
 fn get_terminal_size() (u16, u16) {
-	winsz := C.winsize{}
-	termios.ioctl(0, u64(termios.flag(C.TIOCGWINSZ)), voidptr(&winsz))
-	return winsz.ws_row, winsz.ws_col
+	// NOTE(tauraamui): C.winsize is declared by vlib's term module, and V no longer
+	//                  permits redeclaring the same C struct, so defer to term here.
+	cols, rows := term.get_terminal_size()
+	return u16(rows), u16(cols)
 }
 
 fn restore_terminal_state_signal(_ os.Signal) {

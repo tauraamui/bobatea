@@ -14,7 +14,7 @@
 
 module bobatea
 
-import lib.term.ui as tui
+import bobatea.lib.term.ui as tui
 
 pub struct Event {
 	tui.Event

@@ -477,7 +477,7 @@ fn (mut app App) exec_cmd_async(cmd Cmd) {
 }
 
 // send adds a message to the queue for processing
-fn (mut app App) send(msg Msg) {
+pub fn (mut app App) send(msg Msg) {
 	lock app.msg_queue {
 		app.msg_queue << msg
 	}
@@ -585,4 +585,10 @@ pub fn new_program(mut m Model, opts ProgramOpts) App {
 		initial_model: m
 		on_quit:       opts.on_quit
 	}
+}
+
+// no_cmds returns an empty command list. Building `[]Cmd{}` from another module
+// makes V emit the `Cmd` alias without its typedef, so hand it out from here.
+pub fn no_cmds() []Cmd {
+	return []Cmd{}
 }

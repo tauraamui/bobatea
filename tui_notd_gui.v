@@ -17,7 +17,7 @@
 
 module bobatea
 
-import lib.term.ui as tui
+import bobatea.lib.term.ui as tui
 import arrays
 import strings
 
@@ -363,7 +363,7 @@ mut:
 }
 
 pub fn new_context(cfg Config) (&Context, fn () !) {
-	mut ctx := TUIContext{
+	mut ctx := &TUIContext{
 		render_debug:     cfg.render_debug
 		default_fg_color: cfg.default_fg_color
 		default_bg_color: cfg.default_bg_color
@@ -497,7 +497,7 @@ fn (mut ctx TUIContext) clear_all_offsets() {
 
 fn (mut ctx TUIContext) set_clip_area(c ClipArea) {
 	ctx.clip_area_offset_id = if ctx.offsets.len > 0 {
-		ctx.offsets.last().id
+		ctx.offsets[ctx.offsets.len - 1].id
 	} else {
 		-1
 	}

@@ -1,6 +1,6 @@
 module bobatea
 
-import lib.term.ui as tui
+import bobatea.lib.term.ui as tui
 
 pub fn visible_len(s string) int {
 	return utf8_str_visible_length(s)

@@ -1,6 +1,6 @@
 module bobatea
 
-import lib.term.ui as tui
+import bobatea.lib.term.ui as tui
 
 pub struct Color {
 pub:
@@ -20,7 +20,8 @@ fn ansi2rgb(ansi_color int) (u8, u8, u8) {
 		return 0, 0, 0 // return black for invalid indices
 	}
 
-	color := tui.color_table[ansi_color]
+	table := tui.color_table
+	color := table[ansi_color]
 	r := u8((color >> 16) & 0xff)
 	g := u8((color >> 8) & 0xff)
 	b := u8(color & 0xff)
