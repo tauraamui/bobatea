@@ -54,7 +54,9 @@ fn test_cell_renders_base_and_combiners_in_order() {
 	// a base rune with a combining mark is one cell holding both
 	combined := Cell{
 		base:      `e`
-		combiners: [rune(0x0301)]
+		combiners: &CombinerRunes{
+			runes: [rune(0x0301)]
+		}
 	}
 	assert combined.str() == 'é'
 }
@@ -65,14 +67,37 @@ fn test_cell_equality_covers_base_and_combiners() {
 	// a blank cell and a cell holding a space are different cells, even though
 	// both render as a space
 	assert Cell{} != Cell{ base: ` ` }
-	assert Cell{ base: `a`, combiners: [rune(0x0301)] } != Cell{ base: `a` }
-	assert Cell{ base: `a`, combiners: [rune(0x0301)] } == Cell{
+	assert Cell{
 		base:      `a`
-		combiners: [rune(0x0301)]
+		combiners: &CombinerRunes{
+			runes: [rune(0x0301)]
+		}
+	} != Cell{ base: `a` }
+	// separate allocations holding the same marks are the same cell, so
+	// equality must resolve the pointer rather than compare it
+	assert Cell{
+		base:      `a`
+		combiners: &CombinerRunes{
+			runes: [rune(0x0301)]
+		}
+	} == Cell{
+		base:      `a`
+		combiners: &CombinerRunes{
+			runes: [rune(0x0301)]
+		}
 	}
+	// an allocated-but-empty sequence is indistinguishable from no sequence
+	assert Cell{ base: `a`, combiners: &CombinerRunes{} } == Cell{ base: `a` }
 	// the fields the diffing relies on still take part
 	assert Cell{ base: `a`, visual_width: 1 } != Cell{ base: `a`, visual_width: 2 }
 	assert Cell{ base: `a` } != Cell{ base: `a`, is_continuation: true }
+}
+
+// A Cell is paid for width * height * 2 times over, so its size is a budget,
+// not an implementation detail. This pins it so a field added without thought
+// fails here rather than quietly costing megabytes on a large terminal.
+fn test_cell_stays_small() {
+	assert sizeof(Cell) == 24, 'Cell grew to ${sizeof(Cell)} bytes'
 }
 
 fn test_grid_footprint_counts_both_buffers() {

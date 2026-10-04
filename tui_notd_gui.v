@@ -128,7 +128,7 @@ fn (mut grid Grid) resize(width int, height int) ! {
 			// Only check for multi-width character truncation if width has changed
 			if width_changed && !cell.is_continuation && cell.visual_width > 1 {
 				// Check if all continuation cells would fit in the new width
-				if j + cell.visual_width > width {
+				if j + int(cell.visual_width) > width {
 					// Multi-width character would be truncated, skip it
 					continue
 				}
@@ -177,22 +177,41 @@ fn (style Style) close() string {
 	}
 }
 
+// CombinerRunes holds the zero-width runes (variation selectors, ZWJ,
+// combining marks) belonging to one cell's grapheme. It is heap allocated, and
+// only for the rare cell that has any, so the overwhelmingly common case is a
+// nil pointer and no allocation at all.
+struct CombinerRunes {
+	runes []rune
+}
+
+// Cell is instantiated width * height * 2 times - once per screen position in
+// the grid being drawn, and again in the previous frame kept for diffing - so
+// its size, not just its allocations, sets the renderer's floor. The fields are
+// ordered widest first so the struct carries no interior padding.
 struct Cell {
+	// combiners points at this cell's zero-width runes, or is nil, which it is
+	// for very nearly every cell. It replaced an inline []rune, whose 48-byte
+	// header was 60% of a Cell and was paid by every cell on screen to describe
+	// runes that almost none of them have. A pointer costs 8.
+	combiners &CombinerRunes = unsafe { nil }
 	// base is the grapheme's base rune. Zero represents an empty/blank cell,
 	// which is also the zero value, so a cleared grid needs no initialisation.
-	base rune
-	// combiners holds any zero-width runes (variation selectors, ZWJ,
-	// combining marks) belonging to the same grapheme as base. It is empty for
-	// very nearly every cell, and an empty array holds no buffer, so the
-	// common case costs no allocation. The base rune used to live in this
-	// array too, which meant a one-element heap array for every cell drawn,
-	// every frame.
-	combiners       []rune
-	visual_width    int  // account for runes which are unicode chars (multiple width chars)
+	base     rune
+	fg_color ?Color
+	bg_color ?Color
+	style    ?Style
+	// visual_width is a column count - 0, 1 or 2 in practice, and -1 as the
+	// deliberately-invalid marker clear_prev_data uses - so it does not need an
+	// int. Narrowing it is what lets the fields above pack into 24 bytes.
+	visual_width    i8
 	is_continuation bool // true if this cell is part of a multi-width character
-	fg_color        ?Color
-	bg_color        ?Color
-	style           ?Style
+}
+
+// combiner_count reports how many zero-width runes this cell carries, treating
+// the common nil pointer as none, so callers need not unpack it themselves.
+fn (c Cell) combiner_count() int {
+	return if isnil(c.combiners) { 0 } else { c.combiners.runes.len }
 }
 
 // grid_footprint_bytes reports the heap a render grid of this size occupies.
@@ -214,11 +233,14 @@ fn (a Cell) == (b Cell) bool {
 	if a.base != b.base {
 		return false
 	}
-	if a.combiners.len != b.combiners.len {
+	// resolved sequences are compared, not the pointers: two cells holding the
+	// same combining marks through separate allocations are the same cell
+	a_combiners := a.combiner_count()
+	if a_combiners != b.combiner_count() {
 		return false
 	}
-	for i in 0 .. a.combiners.len {
-		if a.combiners[i] != b.combiners[i] {
+	for i in 0 .. a_combiners {
+		if a.combiners.runes[i] != b.combiners.runes[i] {
 			return false
 		}
 	}
@@ -283,12 +305,13 @@ fn (cell Cell) str() string {
 	if cell.base == 0 {
 		return ' '
 	}
-	if cell.combiners.len == 0 {
+	combiners := cell.combiner_count()
+	if combiners == 0 {
 		return cell.base.str()
 	}
-	mut sb := strings.new_builder((cell.combiners.len + 1) * 2)
+	mut sb := strings.new_builder((combiners + 1) * 2)
 	sb.write_string(cell.base.str())
-	for r in cell.combiners {
+	for r in cell.combiners.runes {
 		sb.write_string(r.str())
 	}
 	return sb.str()
@@ -618,11 +641,16 @@ fn (mut ctx TUIContext) write(c string) {
 			// sequences etc. survive to the terminal.
 			if last_base_x >= 0 {
 				existing := ctx.data.get(last_base_x, cursor_pos.y) or { continue }
-				mut combined := existing.combiners.clone()
+				mut combined := []rune{cap: existing.combiner_count() + 1}
+				if existing.combiner_count() > 0 {
+					combined << existing.combiners.runes
+				}
 				combined << c_char
 				ctx.data.set(last_base_x, cursor_pos.y, Cell{
 					...existing
-					combiners: combined
+					combiners: &CombinerRunes{
+						runes: combined
+					}
 				}) or { break }
 			}
 			continue
@@ -656,7 +684,7 @@ fn (mut ctx TUIContext) write(c string) {
 		// Set the main cell with the character
 		ctx.data.set(x, y, Cell{
 			base:            c_char
-			visual_width:    width
+			visual_width:    i8(width)
 			is_continuation: false
 			fg_color:        resolved_fg
 			bg_color:        resolved_bg
@@ -983,9 +1011,11 @@ fn (ctx TUIContext) screen_text() string {
 				for b in cell.base.str().bytes() {
 					line << b
 				}
-				for r in cell.combiners {
-					for b in r.str().bytes() {
-						line << b
+				if cell.combiner_count() > 0 {
+					for r in cell.combiners.runes {
+						for b in r.str().bytes() {
+							line << b
+						}
 					}
 				}
 			}
@@ -1133,12 +1163,14 @@ fn (mut ctx TUIContext) flush() {
 				ctx.write_buf << u8(` `)
 			} else {
 				ctx.encode_rune_utf8(cell.base)
-				for r in cell.combiners {
-					ctx.encode_rune_utf8(r)
+				if cell.combiner_count() > 0 {
+					for r in cell.combiners.runes {
+						ctx.encode_rune_utf8(r)
+					}
 				}
 			}
 
-			cursor_x += cell.visual_width
+			cursor_x += int(cell.visual_width)
 		}
 		ctx.flush_write_buf()
 	}
