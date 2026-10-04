@@ -210,6 +210,25 @@ pub fn tick(d time.Duration, f fn (time.Time) Msg) Cmd {
 	}
 }
 
+// tick_msg is tick without the closure, for a tick that re-arms itself on
+// every message it delivers.
+//
+// tick has to capture its arguments, and a V closure's captured context is
+// registered in a process-wide table that is never emptied, so the context -
+// and everything it points at - is pinned for the life of the program. One
+// closure is nothing; one per tick, at a cursor's blink rate, is a heap that
+// grows for as long as the program runs.
+//
+// A caller that can name its duration and callback as constants needs no
+// capture: it returns this from a plain, non-capturing function and the whole
+// chain allocates nothing that outlives the tick.
+pub fn tick_msg(d time.Duration, f fn (time.Time) Msg) Msg {
+	return TickCmd{
+		duration: d
+		callback: f
+	}
+}
+
 // every produces a command at an interval aligned to the system clock.
 // That is, the timer begins at the next interval boundary.
 //
@@ -397,11 +416,17 @@ fn (mut app App) handle_event(msg Msg) {
 
 // exec_tick_cmd executes a tick command asynchronously
 fn (mut app App) exec_tick_cmd(tick_cmd TickCmd) {
-	go fn [mut app, tick_cmd] () {
-		time.sleep(tick_cmd.duration)
-		msg := tick_cmd.callback(time.now())
-		app.send(msg)
-	}()
+	// spawned as a method rather than as a captured closure: the closure would
+	// be registered in V's process-wide closure table and never released, so a
+	// repeating tick would leak its context once per tick. See tick_msg.
+	spawn app.run_tick_cmd(tick_cmd)
+}
+
+// run_tick_cmd waits out a tick's duration and delivers its message.
+fn (mut app App) run_tick_cmd(tick_cmd TickCmd) {
+	time.sleep(tick_cmd.duration)
+	msg := tick_cmd.callback(time.now())
+	app.send(msg)
 }
 
 // exec_batch_msg executes commands concurrently using go

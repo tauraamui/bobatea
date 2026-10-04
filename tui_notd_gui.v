@@ -18,7 +18,6 @@
 module bobatea
 
 import bobatea.lib.term.ui as tui
-import arrays
 import strings
 
 struct Pos {
@@ -473,14 +472,20 @@ fn (mut ctx TUIContext) next_id() int {
 	return (ctx.id_counter * 2654435761) % 1000000
 }
 
+// map_id_to_index finds the offset with this id.
+//
+// Written as a loop rather than with a predicate: the predicate has to capture
+// the id, and V registers every closure's captured context in a table it never
+// empties, so each call would pin a few bytes permanently. This is called
+// several times per frame by the offset helpers, which at frame rate is a heap
+// that grows for as long as the program runs.
 fn (ctx TUIContext) map_id_to_index(id int) ?int {
-	index := arrays.index_of_first(ctx.offsets, fn [id] (idx int, o Offset) bool {
-		return o.id == id
-	})
-	if index == -1 {
-		return none
+	for i, o in ctx.offsets {
+		if o.id == id {
+			return i
+		}
 	}
-	return index
+	return none
 }
 
 fn (mut ctx TUIContext) push_offset(o Offset) int {

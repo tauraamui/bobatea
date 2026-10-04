@@ -35,7 +35,26 @@ pub:
 	fg_color     ?Color
 }
 
+// render draws the layout's chrome and then its content through content_fn.
+//
+// Prefer render_begin/render_end in a view that runs every frame. A caller
+// that needs any of its own state inside content_fn has to capture it, and V
+// registers each closure's captured context in a process-wide table that is
+// never emptied: the context, and everything it points at, is pinned for the
+// life of the process. A view rendered at frame rate therefore pins one copy
+// of whatever it captures per frame - which for a model captured by value is a
+// heap that grows for as long as the program runs.
 pub fn (l Layout) render(mut ctx Context, content_fn fn (mut Context)) {
+	l.render_begin(mut ctx)
+	content_fn(mut ctx)
+	l.render_end(mut ctx)
+}
+
+// render_begin draws the layout's chrome and pushes the content offset, so the
+// caller can draw its content inline rather than in a callback. Every call
+// must be matched by a render_end on the same layout, which pops the offset
+// and restores the colours.
+pub fn (l Layout) render_begin(mut ctx Context) {
 	// Apply background color if specified
 	if bg := l.bg_color {
 		ctx.set_bg_color(bg)
@@ -79,10 +98,13 @@ pub fn (l Layout) render(mut ctx Context, content_fn fn (mut Context)) {
 	total_offset_y := border_offset + l.padding.top + alignment_offset_y
 
 	ctx.push_offset(Offset{ x: total_offset_x, y: total_offset_y })
-	content_fn(mut ctx)
+}
+
+// render_end closes a render_begin: it pops the content offset and resets any
+// colours the layout set.
+pub fn (l Layout) render_end(mut ctx Context) {
 	ctx.pop_offset()
 
-	// Reset colors after rendering
 	if l.fg_color != none {
 		ctx.reset_color()
 	}
