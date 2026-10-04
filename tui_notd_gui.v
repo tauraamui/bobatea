@@ -178,10 +178,16 @@ fn (style Style) close() string {
 }
 
 struct Cell {
-	// data holds the base rune plus any zero-width combiners (variation
-	// selectors, ZWJ, combining marks) that belong to the same grapheme.
-	// An empty slice represents an empty/blank cell.
-	data            []rune
+	// base is the grapheme's base rune. Zero represents an empty/blank cell,
+	// which is also the zero value, so a cleared grid needs no initialisation.
+	base rune
+	// combiners holds any zero-width runes (variation selectors, ZWJ,
+	// combining marks) belonging to the same grapheme as base. It is empty for
+	// very nearly every cell, and an empty array holds no buffer, so the
+	// common case costs no allocation. The base rune used to live in this
+	// array too, which meant a one-element heap array for every cell drawn,
+	// every frame.
+	combiners       []rune
 	visual_width    int  // account for runes which are unicode chars (multiple width chars)
 	is_continuation bool // true if this cell is part of a multi-width character
 	fg_color        ?Color
@@ -189,12 +195,30 @@ struct Cell {
 	style           ?Style
 }
 
+// grid_footprint_bytes reports the heap a render grid of this size occupies.
+//
+// It lives here because Cell is not exported, so a caller cannot size one -
+// and a caller that guesses produces a figure that looks authoritative and is
+// not. The count covers both buffers: the grid being drawn and the previous
+// frame kept for diffing. Any per-cell combiner runes are excluded, since a
+// cell only allocates those when it holds a grapheme with combining marks,
+// which is a vanishing fraction of a screen.
+pub fn grid_footprint_bytes(width int, height int) u64 {
+	if width <= 0 || height <= 0 {
+		return 0
+	}
+	return u64(width) * u64(height) * u64(sizeof(Cell)) * 2
+}
+
 fn (a Cell) == (b Cell) bool {
-	if a.data.len != b.data.len {
+	if a.base != b.base {
 		return false
 	}
-	for i in 0 .. a.data.len {
-		if a.data[i] != b.data[i] {
+	if a.combiners.len != b.combiners.len {
+		return false
+	}
+	for i in 0 .. a.combiners.len {
+		if a.combiners[i] != b.combiners[i] {
 			return false
 		}
 	}
@@ -256,11 +280,15 @@ fn (a Cell) == (b Cell) bool {
 }
 
 fn (cell Cell) str() string {
-	if cell.data.len == 0 {
+	if cell.base == 0 {
 		return ' '
 	}
-	mut sb := strings.new_builder(cell.data.len * 2)
-	for r in cell.data {
+	if cell.combiners.len == 0 {
+		return cell.base.str()
+	}
+	mut sb := strings.new_builder((cell.combiners.len + 1) * 2)
+	sb.write_string(cell.base.str())
+	for r in cell.combiners {
 		sb.write_string(r.str())
 	}
 	return sb.str()
@@ -529,15 +557,48 @@ fn rune_visual_width(r rune) int {
 	// East Asian wide characters and emoji — return width 2.
 	if r >= 0x1100
 		&& (r <= 0x115f || r == 0x2329 || r == 0x232a || (r >= 0x2e80 && r <= 0xa4cf && r != 0x303f)
-		|| (r >= 0xac00 && r <= 0xd7a3) || (r >= 0xf900 && r <= 0xfaff)
-		|| (r >= 0xfe10 && r <= 0xfe19) || (r >= 0xfe30 && r <= 0xfe6f)
-		|| (r >= 0xff00 && r <= 0xff60) || (r >= 0xffe0 && r <= 0xffe6)
-		|| (r >= 0x1f300 && r <= 0x1f64f) || (r >= 0x1f680 && r <= 0x1f6ff)
-		|| (r >= 0x1f900 && r <= 0x1f9ff) || (r >= 0x1fa70 && r <= 0x1faff)
-		|| (r >= 0x20000 && r <= 0x3fffd)) {
+			|| (r >= 0xac00 && r <= 0xd7a3) || (r >= 0xf900 && r <= 0xfaff)
+			|| (r >= 0xfe10 && r <= 0xfe19) || (r >= 0xfe30 && r <= 0xfe6f)
+			|| (r >= 0xff00 && r <= 0xff60) || (r >= 0xffe0 && r <= 0xffe6)
+			|| (r >= 0x1f300 && r <= 0x1f64f) || (r >= 0x1f680 && r <= 0x1f6ff)
+			|| (r >= 0x1f900 && r <= 0x1f9ff) || (r >= 0x1fa70 && r <= 0x1faff)
+			|| (r >= 0x20000 && r <= 0x3fffd)) {
 		return 2
 	}
 	return 1
+}
+
+// decode_rune_utf8 reads the UTF-8 sequence starting at byte i, returning the
+// rune and how many bytes it occupied. It is the inverse of encode_rune_utf8,
+// and it exists so write() can walk a string's runes without the []rune that
+// runes() would allocate - once per write() call, which for a filled rect or
+// line is once per cell, on every frame.
+//
+// A malformed lead byte yields the byte itself as a rune and a length of one,
+// so a bad sequence advances rather than looping.
+fn decode_rune_utf8(s string, i int) (rune, int) {
+	b := unsafe { s.str[i] }
+	if b < 0x80 {
+		return rune(b), 1
+	}
+	len := utf8_char_len(b)
+	if len <= 1 || i + len > s.len {
+		return rune(b), 1
+	}
+	mut v := match len {
+		2 { u32(b & 0x1F) }
+		3 { u32(b & 0x0F) }
+		else { u32(b & 0x07) }
+	}
+	for j in 1 .. len {
+		cb := unsafe { s.str[i + j] }
+		if cb & 0xC0 != 0x80 {
+			// not a continuation byte, so the sequence is truncated
+			return rune(b), 1
+		}
+		v = (v << 6) | u32(cb & 0x3F)
+	}
+	return rune(v), len
 }
 
 fn (mut ctx TUIContext) write(c string) {
@@ -545,7 +606,10 @@ fn (mut ctx TUIContext) write(c string) {
 	mut x_offset := 0
 	mut last_base_x := -1
 
-	for c_char in c.runes() {
+	mut byte_i := 0
+	for byte_i < c.len {
+		c_char, rune_len := decode_rune_utf8(c, byte_i)
+		byte_i += rune_len
 		width := rune_visual_width(c_char)
 
 		if width == 0 {
@@ -554,11 +618,11 @@ fn (mut ctx TUIContext) write(c string) {
 			// sequences etc. survive to the terminal.
 			if last_base_x >= 0 {
 				existing := ctx.data.get(last_base_x, cursor_pos.y) or { continue }
-				mut combined := existing.data.clone()
+				mut combined := existing.combiners.clone()
 				combined << c_char
 				ctx.data.set(last_base_x, cursor_pos.y, Cell{
 					...existing
-					data: combined
+					combiners: combined
 				}) or { break }
 			}
 			continue
@@ -591,7 +655,7 @@ fn (mut ctx TUIContext) write(c string) {
 
 		// Set the main cell with the character
 		ctx.data.set(x, y, Cell{
-			data:            [c_char]
+			base:            c_char
 			visual_width:    width
 			is_continuation: false
 			fg_color:        resolved_fg
@@ -615,7 +679,6 @@ fn (mut ctx TUIContext) write(c string) {
 				existing_cont.fg_color
 			}
 			ctx.data.set(cont_x, cursor_pos.y, Cell{
-				data:            []rune{}
 				visual_width:    0
 				is_continuation: true
 				fg_color:        cont_fg
@@ -735,8 +798,7 @@ fn (mut ctx TUIContext) clear_prev_data() {
 	// Fill with cells that have invalid/unique properties
 	for i in 0 .. invalid_grid.data.len {
 		invalid_grid.data[i] = Cell{
-			data:            [rune(`\0`)] // null character that won't appear in real content
-			visual_width:    -1   // invalid width
+			visual_width:    -1   // invalid width, which is what makes it never compare equal
 			is_continuation: false
 			fg_color:        Color{255, 0, 255} // magenta - unlikely color
 			bg_color:        Color{255, 0, 255}
@@ -915,12 +977,14 @@ fn (ctx TUIContext) screen_text() string {
 			if cell.is_continuation {
 				continue
 			}
-			if cell.data.len == 0 {
+			if cell.base == 0 {
 				line << u8(` `)
 			} else {
-				for r in cell.data {
-					s := r.str()
-					for b in s.bytes() {
+				for b in cell.base.str().bytes() {
+					line << b
+				}
+				for r in cell.combiners {
+					for b in r.str().bytes() {
 						line << b
 					}
 				}
@@ -1065,10 +1129,11 @@ fn (mut ctx TUIContext) flush() {
 			}
 
 			// Encode rune(s) directly as UTF-8 bytes — no string allocation.
-			if cell.data.len == 0 {
+			if cell.base == 0 {
 				ctx.write_buf << u8(` `)
 			} else {
-				for r in cell.data {
+				ctx.encode_rune_utf8(cell.base)
+				for r in cell.combiners {
 					ctx.encode_rune_utf8(r)
 				}
 			}
