@@ -437,6 +437,11 @@ pub fn clear_screen() Cmd {
 // NOTE(tauraamui) [22/10/2025]: this is invoked by the underlying runtime loop directly only
 //                               when an actual event comes in, (keypress/resize, etc.,)
 fn event(e Event, mut app App) {
+	// Windows console input reports modifier keys as key presses of their own.
+	// They carry no character, so the model must never see them as a KeyMsg.
+	if e.typ == .key_down && is_modifier_key(e.code) {
+		return
+	}
 	msg := match e.typ {
 		.key_down {
 			Msg(resolve_key_msg(e))

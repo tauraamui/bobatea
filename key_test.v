@@ -1,5 +1,7 @@
 module bobatea
 
+import bobatea.lib.term.ui as tui
+
 fn test_resolve_key_msg_ctrl_and_a() {
 	assert resolve_key_msg(Event{
 		modifiers: .ctrl
@@ -422,3 +424,13 @@ fn test_single_char_ctrl_and_c() {
 	assert e.code == .c
 }
 
+fn test_is_modifier_key_matches_standalone_modifiers_only() {
+	for code in [tui.KeyCode.left_shift, .right_shift, .left_ctrl, .right_ctrl, .left_alt, .right_alt,
+		.left_super, .right_super, .left_hyper, .right_hyper, .left_meta, .right_meta, .caps_lock,
+		.num_lock, .scroll_lock] {
+		assert is_modifier_key(code), '${code} should be a modifier key'
+	}
+	for code in [tui.KeyCode.null, .a, .at, .space, .enter, .escape, .f24, .delete] {
+		assert !is_modifier_key(code), '${code} should not be a modifier key'
+	}
+}
