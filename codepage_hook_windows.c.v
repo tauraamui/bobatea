@@ -1,6 +1,7 @@
 module bobatea
 
 #flag windows @VMODROOT/windows_wrappers.c
+#include "@VMODROOT/windows_wrappers.h"
 
 fn C.bobatea_SetConsoleOutputCP(code_page_id u32) int
 fn C.bobatea_GetConsoleOutputCP() u32
