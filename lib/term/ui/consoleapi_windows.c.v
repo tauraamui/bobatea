@@ -1,5 +1,7 @@
 module ui
 
+#include "@VMODROOT/windows_wrappers.h"
+
 pub union C.Event {
 	KeyEvent              C.KEY_EVENT_RECORD
 	MouseEvent            C.MOUSE_EVENT_RECORD

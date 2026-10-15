@@ -1,4 +1,4 @@
-#include <windows.h>
+#include "windows_wrappers.h"
 
 int bobatea_SetConsoleOutputCP(unsigned int code_page_id) {
 	return SetConsoleOutputCP(code_page_id) != 0;
