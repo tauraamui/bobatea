@@ -65,6 +65,13 @@ const special_keycodes = [
 	.f24,
 ]
 
+// is_modifier_key reports whether `code` is a standalone modifier or lock key.
+// Their codes are above 255, so code_to_str would truncate them into ordinary
+// characters, turning a lone shift press into `@`.
+fn is_modifier_key(code tui.KeyCode) bool {
+	return int(code) >= int(tui.KeyCode.left_shift) && int(code) <= int(tui.KeyCode.scroll_lock)
+}
+
 fn resolve_key_msg(e Event) KeyMsg {
 	// if modifiers is either ctrl or shift then the only character rep field we want to pay attention to
 	// is `code`.
