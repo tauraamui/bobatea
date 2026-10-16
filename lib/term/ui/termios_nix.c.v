@@ -159,21 +159,43 @@ fn (mut ctx Context) termios_setup() ! {
 fn get_cursor_position() (int, int) {
 	print('\033[6n')
 	flush_stdout()
-	mut s := ''
-	unsafe {
-		buf := malloc_noscan(25)
-		len := C.read(C.STDIN_FILENO, buf, 24)
-		buf[len] = 0
-		s = tos(buf, len)
+	return parse_cursor_position(read_stdin_reply())
+}
+
+// parse_cursor_position finds a cursor position report, `ESC [ row ; col R`,
+// anywhere in s. Keys typed while waiting for the terminal's reply arrive in
+// the same read, before or after it, and a terminal that ignores the query
+// sends nothing at all, so anything without a report gives -1, -1.
+fn parse_cursor_position(s string) (int, int) {
+	for i := 0; i + 1 < s.len; i++ {
+		if s[i] != 0x1b || s[i + 1] != `[` {
+			continue
+		}
+		mut j := i + 2
+		for j < s.len && (s[j].is_digit() || s[j] == `;`) {
+			j++
+		}
+		if j >= s.len || s[j] != `R` {
+			continue
+		}
+		parts := s[i + 2..j].split(';')
+		if parts.len != 2 || parts[0] == '' || parts[1] == '' {
+			continue
+		}
+		return parts[0].int(), parts[1].int()
 	}
-	if s.len == 0 {
-		return -1, -1
+	return -1, -1
+}
+
+// read_stdin_reply reads whatever the terminal has sent back to a query, up
+// to 24 bytes: nothing when the read times out or fails
+fn read_stdin_reply() string {
+	mut buf := []u8{len: 24}
+	len := C.read(C.STDIN_FILENO, buf.data, buf.len)
+	if len <= 0 {
+		return ''
 	}
-	a := s[2..].split(';')
-	if a.len != 2 {
-		return -1, -1
-	}
-	return a[0].int(), a[1].int()
+	return buf[..len].bytestr()
 }
 
 fn supports_truecolor() bool {
@@ -187,14 +209,7 @@ fn supports_truecolor() bool {
 	// andquery the current color
 	print('\x1bP\$qm\x1b\\')
 	flush_stdout()
-	mut s := ''
-	unsafe {
-		buf := malloc_noscan(25)
-		len := C.read(C.STDIN_FILENO, buf, 24)
-		buf[len] = 0
-		s = tos(buf, len)
-	}
-	return s.contains('1:2:3')
+	return read_stdin_reply().contains('1:2:3')
 }
 
 fn termios_reset() {
